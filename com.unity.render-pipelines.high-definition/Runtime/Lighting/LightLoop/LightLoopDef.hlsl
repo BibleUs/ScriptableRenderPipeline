@@ -367,8 +367,8 @@ void InitContactShadow(PositionInputs posInput, inout LightLoopContext context)
 
 void InvalidateConctactShadow(PositionInputs posInput, inout LightLoopContext context)
 {
-    context.contactShadowFade = 0;
-    context.contactShadow = 0.0f;
+    context.contactShadowFade = 0.0;
+    context.contactShadow = 0;
 }
 
 float GetContactShadow(LightLoopContext lightLoopContext, int contactShadowMask, float rayTracedShadow)
