@@ -19,8 +19,8 @@ testplatforms:
   - name: playmode
     args: --suite=playmode
 projects:
-#  - name: HDRP_DXR
-#    folder: HDRP_DXR_Tests
+  - name: HDRP_DXR
+    folder: HDRP_DXR_Tests
 win_apis:
   - name: DX12
     cmd: -force-d3d12
