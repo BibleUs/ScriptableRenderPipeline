@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added a penumbra tint option for lights
 - Added support for depth copy with XR SDK
 - Added debug setting to Render Pipeline Debug Window to list the active XR views
+- Added an option to filter the result of the volumetric lighting (off by default).
 - Add XR single-pass test mode to Render Pipeline Debug Window
 
 ### Fixed
@@ -136,6 +137,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed HDRP samples file hierarchy
 - Fixed Light units not matching light type
 - Fixed QualitySettings panel not displaying HDRP Asset
+- Fixed black reflection probes the first time loading a project
 - Fixed y-flip in scene view with XR SDK
 - Fixed Decal projectors do not immediately respond when parent object layer mask is changed in editor.
 
