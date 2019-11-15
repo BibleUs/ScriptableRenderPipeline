@@ -64,6 +64,7 @@ namespace UnityEditor.Rendering.HighDefinition
         SerializedProperty      m_FilterFoldout;
         SerializedProperty      m_RendererFoldout;
         SerializedProperty      m_PassFoldout;
+		SerializedProperty      m_TargetDepthBuffer;
 
         // Filter
         SerializedProperty      m_RenderQueue;
@@ -83,12 +84,15 @@ namespace UnityEditor.Rendering.HighDefinition
 
         ReorderableList         m_ShaderPassesList;
 
+        bool customDepthIsNone => (CustomPass.TargetBuffer)m_TargetDepthBuffer.intValue == CustomPass.TargetBuffer.None;
+
         protected override void Initialize(SerializedProperty customPass)
         {
             // Header bools
             m_FilterFoldout = customPass.FindPropertyRelative("filterFoldout");
             m_RendererFoldout = customPass.FindPropertyRelative("rendererFoldout");
             m_PassFoldout = customPass.FindPropertyRelative("passFoldout");
+			m_TargetDepthBuffer = customPass.FindPropertyRelative("targetDepthBuffer");
 
             // Filter props
             m_RenderQueue = customPass.FindPropertyRelative("renderQueueType");
@@ -203,9 +207,17 @@ namespace UnityEditor.Rendering.HighDefinition
             EditorGUI.indentLevel--;
 
             rect.y += Styles.defaultLineSpace;
-            m_OverrideDepthState.boolValue = EditorGUI.Toggle(rect, Styles.overrideDepth, m_OverrideDepthState.boolValue);
+            if (customDepthIsNone)
+            {
+                using (new EditorGUI.DisabledScope(true))
+                    EditorGUI.Toggle(rect, Styles.overrideDepth, false);
+            }
+            else
+            {
+                m_OverrideDepthState.boolValue = EditorGUI.Toggle(rect, Styles.overrideDepth, m_OverrideDepthState.boolValue);
+            }
 
-            if (m_OverrideDepthState.boolValue)
+            if (m_OverrideDepthState.boolValue && !customDepthIsNone)
             {
                 EditorGUI.indentLevel++;
                 rect.y += Styles.defaultLineSpace;
@@ -262,7 +274,7 @@ namespace UnityEditor.Rendering.HighDefinition
             if (m_RendererFoldout.boolValue)
             {
                 height += Styles.defaultLineSpace * m_MaterialLines;
-                height += Styles.defaultLineSpace * (m_OverrideDepthState.boolValue ? 3 : 1);
+                height += Styles.defaultLineSpace * (m_OverrideDepthState.boolValue && !customDepthIsNone ? 3 : 1);
                 var mat = m_OverrideMaterial.objectReferenceValue as Material;
 
 #if SHOW_PASS_NAMES
