@@ -23,7 +23,8 @@ namespace UnityEngine.Rendering.HighDefinition
         Added = 0x1,
         Excluded = 0x02,
         TransparencyIssue = 0x04,
-        NullMaterial = 0x08
+        NullMaterial = 0x08,
+        MissingMesh = 0x10
     }
 
     class HDRayTracingLights
@@ -106,7 +107,9 @@ namespace UnityEngine.Rendering.HighDefinition
             if (materialArray == null) return AccelerationStructureStatus.NullMaterial;
 
             // For every sub-mesh/sub-material let's build the right flags
-            int numSubMeshes = materialArray.Count;
+            currentRenderer.TryGetComponent(out MeshFilter meshFilter);
+            if (meshFilter == null || meshFilter.sharedMesh == null) return AccelerationStructureStatus.MissingMesh;
+            int numSubMeshes = meshFilter.sharedMesh.subMeshCount;
 
             // Get the layer of this object
             int objectLayerValue = 1 << currentRenderer.gameObject.layer;
@@ -120,33 +123,44 @@ namespace UnityEngine.Rendering.HighDefinition
 
             for (int meshIdx = 0; meshIdx < numSubMeshes; ++meshIdx)
             {
-                Material currentMaterial = materialArray[meshIdx];
-                // The material is transparent if either it has the requested keyword or is in the transparent queue range
-                if (currentMaterial != null)
+                // Intially we consider the potential mesh as invalid
+                bool validMesh = false;
+                if (materialArray.Count > meshIdx)
                 {
-                    subMeshFlagArray[meshIdx] = true;
+                    // Grab the material for the current sub-mesh
+                    Material currentMaterial = materialArray[meshIdx];
 
-                    // Is the sub material transparent?
-                    subMeshTransparentArray[meshIdx] = currentMaterial.IsKeywordEnabled("_SURFACE_TYPE_TRANSPARENT")
-                    || (HDRenderQueue.k_RenderQueue_Transparent.lowerBound <= currentMaterial.renderQueue
-                    && HDRenderQueue.k_RenderQueue_Transparent.upperBound >= currentMaterial.renderQueue)
-                    || (HDRenderQueue.k_RenderQueue_AllTransparentRaytracing.lowerBound <= currentMaterial.renderQueue
-                    && HDRenderQueue.k_RenderQueue_AllTransparentRaytracing.upperBound >= currentMaterial.renderQueue);
+                    // The material is transparent if either it has the requested keyword or is in the transparent queue range
+                    if (currentMaterial != null)
+                    {
+                        // Mesh is valid given that all requirements are ok
+                        validMesh = true;
+                        subMeshFlagArray[meshIdx] = true;
 
-                    // aggregate the transparency info
-                    materialIsOnlyTransparent &= subMeshTransparentArray[meshIdx];
-                    hasTransparentSubMaterial |= subMeshTransparentArray[meshIdx];
+                        // Is the sub material transparent?
+                        subMeshTransparentArray[meshIdx] = currentMaterial.IsKeywordEnabled("_SURFACE_TYPE_TRANSPARENT")
+                        || (HDRenderQueue.k_RenderQueue_Transparent.lowerBound <= currentMaterial.renderQueue
+                        && HDRenderQueue.k_RenderQueue_Transparent.upperBound >= currentMaterial.renderQueue)
+                        || (HDRenderQueue.k_RenderQueue_AllTransparentRaytracing.lowerBound <= currentMaterial.renderQueue
+                        && HDRenderQueue.k_RenderQueue_AllTransparentRaytracing.upperBound >= currentMaterial.renderQueue);
 
-                    // Is the material alpha tested?
-                    subMeshCutoffArray[meshIdx] = currentMaterial.IsKeywordEnabled("_ALPHATEST_ON")
-                    || (HDRenderQueue.k_RenderQueue_OpaqueAlphaTest.lowerBound <= currentMaterial.renderQueue
-                    && HDRenderQueue.k_RenderQueue_OpaqueAlphaTest.upperBound >= currentMaterial.renderQueue);
+                        // aggregate the transparency info
+                        materialIsOnlyTransparent &= subMeshTransparentArray[meshIdx];
+                        hasTransparentSubMaterial |= subMeshTransparentArray[meshIdx];
 
-                    // Force it to be non single sided if it has the keyword if there is a reason
-                    bool doubleSided = currentMaterial.doubleSidedGI || currentMaterial.IsKeywordEnabled("_DOUBLESIDED_ON");
-                    singleSided |= !doubleSided;
+                        // Is the material alpha tested?
+                        subMeshCutoffArray[meshIdx] = currentMaterial.IsKeywordEnabled("_ALPHATEST_ON")
+                        || (HDRenderQueue.k_RenderQueue_OpaqueAlphaTest.lowerBound <= currentMaterial.renderQueue
+                        && HDRenderQueue.k_RenderQueue_OpaqueAlphaTest.upperBound >= currentMaterial.renderQueue);
+
+                        // Force it to be non single sided if it has the keyword if there is a reason
+                        bool doubleSided = currentMaterial.doubleSidedGI || currentMaterial.IsKeywordEnabled("_DOUBLESIDED_ON");
+                        singleSided |= !doubleSided;
+                    }
                 }
-                else
+                
+                // If the mesh was not valid, exclude it
+                if (!validMesh)
                 {
                     subMeshFlagArray[meshIdx] = false;
                     subMeshCutoffArray[meshIdx] = false;
