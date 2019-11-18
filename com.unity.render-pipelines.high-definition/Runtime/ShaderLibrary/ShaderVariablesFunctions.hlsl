@@ -3,6 +3,24 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
+// This function always return the absolute position in WS
+float3 GetAbsolutePositionWS(float3 positionRWS)
+{
+#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
+    positionRWS += _WorldSpaceCameraPos;
+#endif
+    return positionRWS;
+}
+
+// This function return the camera relative position in WS
+float3 GetCameraRelativePositionWS(float3 positionWS)
+{
+#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
+    positionWS -= _WorldSpaceCameraPos;
+#endif
+    return positionWS;
+}
+
 // Return absolute world position of current object
 float3 GetObjectAbsolutePositionWS()
 {
@@ -109,43 +127,25 @@ float4 SampleSkyTexture(float3 texCoord, float lod, int sliceIndex)
 }
 
 // This function assumes the bitangent flip is encoded in tangentWS.w
-float3x3 BuildTangentToWorld(float4 tangentWS, float3 normalWS)
+float3x3 BuildWorldToTangent(float4 tangentWS, float3 normalWS)
 {
     // tangentWS must not be normalized (mikkts requirement)
 
     // Normalize normalWS vector but keep the renormFactor to apply it to bitangent and tangent
     float3 unnormalizedNormalWS = normalWS;
-    float renormFactor = 1.0 / max(FLT_MIN, length(unnormalizedNormalWS));
+    float renormFactor = 1.0 / length(unnormalizedNormalWS);
 
     // bitangent on the fly option in xnormal to reduce vertex shader outputs.
     // this is the mikktspace transformation (must use unnormalized attributes)
-    float3x3 tangentToWorld = CreateTangentToWorld(unnormalizedNormalWS, tangentWS.xyz, tangentWS.w > 0.0 ? 1.0 : -1.0);
+    float3x3 worldToTangent = CreateWorldToTangent(unnormalizedNormalWS, tangentWS.xyz, tangentWS.w > 0.0 ? 1.0 : -1.0);
 
     // surface gradient based formulation requires a unit length initial normal. We can maintain compliance with mikkts
     // by uniformly scaling all 3 vectors since normalization of the perturbed normal will cancel it.
-    tangentToWorld[0] = tangentToWorld[0] * renormFactor;
-    tangentToWorld[1] = tangentToWorld[1] * renormFactor;
-    tangentToWorld[2] = tangentToWorld[2] * renormFactor;		// normalizes the interpolated vertex normal
+    worldToTangent[0] = worldToTangent[0] * renormFactor;
+    worldToTangent[1] = worldToTangent[1] * renormFactor;
+    worldToTangent[2] = worldToTangent[2] * renormFactor;		// normalizes the interpolated vertex normal
 
-    return tangentToWorld;
-}
-
-// Transforms normal from object to world space
-float3 TransformPreviousObjectToWorldNormal(float3 normalOS)
-{
-#ifdef UNITY_ASSUME_UNIFORM_SCALING
-    return normalize(mul((float3x3)unity_MatrixPreviousM, normalOS));
-#else
-    // Normal need to be multiply by inverse transpose
-    return normalize(mul(normalOS, (float3x3)unity_MatrixPreviousMI));
-#endif
-}
-
-// Transforms local position to camera relative world space
-float3 TransformPreviousObjectToWorld(float3 positionOS)
-{
-    float4x4 previousModelMatrix = ApplyCameraTranslationToMatrix(unity_MatrixPreviousM);
-    return mul(previousModelMatrix, float4(positionOS, 1.0)).xyz;
+    return worldToTangent;
 }
 
 #endif // UNITY_SHADER_VARIABLES_FUNCTIONS_INCLUDED

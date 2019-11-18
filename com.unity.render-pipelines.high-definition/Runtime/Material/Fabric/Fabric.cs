@@ -1,11 +1,13 @@
-using UnityEngine.Rendering.HighDefinition.Attributes;
+using System;
+using UnityEngine.Experimental.Rendering.HDPipeline.Attributes;
+using UnityEngine.Rendering;
 
 //-----------------------------------------------------------------------------
 // structure definition
 //-----------------------------------------------------------------------------
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
-    class Fabric : RenderPipelineMaterial
+    public class Fabric : RenderPipelineMaterial
     {
         // If change, be sure it match what is done in Lit.hlsl: MaterialFeatureFlagsFromGBuffer
         // Material bit mask must match the size define LightDefinitions.s_MaterialFeatureMaskFlags value
@@ -127,7 +129,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         public Fabric() {}
 
-        public override void Build(HDRenderPipelineAsset hdAsset, RenderPipelineResources defaultResources)
+        public override void Build(HDRenderPipelineAsset hdAsset)
         {
             PreIntegratedFGD.instance.Build(PreIntegratedFGD.FGDIndex.FGD_CharlieAndFabricLambert);
             //LTCAreaLight.instance.Build();

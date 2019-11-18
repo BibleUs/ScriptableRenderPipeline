@@ -1,10 +1,10 @@
 using System;
+using UnityEngine.Rendering;
 using System.Reflection;
 using System.Collections.Generic;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
-    [HelpURL(Documentation.baseURL + Documentation.version + Documentation.subURL + "HDRP-Asset" + Documentation.endURL)]
     public partial class RenderPipelineResources : ScriptableObject
     {
         [Serializable, ReloadGroup]
@@ -109,18 +109,14 @@ namespace UnityEngine.Rendering.HighDefinition
             public Shader hdriSkyPS;
             [Reload("Runtime/Sky/HDRISky/IntegrateHDRISky.shader")]
             public Shader integrateHdriSkyPS;
+            [Reload("Runtime/Sky/ProceduralSky/ProceduralSky.shader")]
+            public Shader proceduralSkyPS;
             [Reload("Skybox/Cubemap", ReloadAttribute.Package.Builtin)]
             public Shader skyboxCubemapPS;
             [Reload("Runtime/Sky/GradientSky/GradientSky.shader")]
             public Shader gradientSkyPS;
             [Reload("Runtime/Sky/AmbientProbeConvolution.compute")]
             public ComputeShader ambientProbeConvolutionCS;
-            [Reload("Runtime/Sky/PhysicallyBasedSky/GroundIrradiancePrecomputation.compute")]
-            public ComputeShader groundIrradiancePrecomputationCS;
-            [Reload("Runtime/Sky/PhysicallyBasedSky/InScatteredRadiancePrecomputation.compute")]
-            public ComputeShader inScatteredRadiancePrecomputationCS;
-            [Reload("Runtime/Sky/PhysicallyBasedSky/PhysicallyBasedSky.shader")]
-            public Shader        physicallyBasedSkyPS;
 
             // Material
             [Reload("Runtime/Material/PreIntegratedFGD/PreIntegratedFGD_GGXDisneyDiffuse.shader")]
@@ -131,8 +127,6 @@ namespace UnityEngine.Rendering.HighDefinition
             public Shader preIntegratedFGD_WardPS;
             [Reload("Runtime/Material/AxF/PreIntegratedFGD_CookTorrance.shader")]
             public Shader preIntegratedFGD_CookTorrancePS;
-            [Reload("Runtime/Material/CustomPass/DefaultRenderer.shader")]
-            public Shader defaultRendererCustomPass;
 
             // Utilities / Core
             [Reload("Runtime/Core/CoreResources/EncodeBC6H.compute")]
@@ -143,16 +137,8 @@ namespace UnityEngine.Rendering.HighDefinition
             public Shader blitCubeTextureFacePS;
             [Reload("Runtime/Material/LTCAreaLight/FilterAreaLightCookies.shader")]
             public Shader filterAreaLightCookiesPS;
-            [Reload("Runtime/Core/CoreResources/ClearUIntTextureArray.compute")]
-            public ComputeShader clearUIntTextureCS;
 
-            // XR
-            [Reload("Runtime/ShaderLibrary/XRMirrorView.shader")]
-            public Shader xrMirrorViewPS;
-            [Reload("Runtime/ShaderLibrary/XROcclusionMesh.shader")]
-            public Shader xrOcclusionMeshPS;
-
-            // Shadow
+            // Shadow            
             [Reload("Runtime/Lighting/Shadow/ShadowClear.shader")]
             public Shader shadowClearPS;
             [Reload("Runtime/Lighting/Shadow/EVSMBlur.compute")]
@@ -165,16 +151,18 @@ namespace UnityEngine.Rendering.HighDefinition
             // Decal
             [Reload("Runtime/Material/Decal/DecalNormalBuffer.shader")]
             public Shader decalNormalBufferPS;
-            [Reload("Runtime/Material/Decal/ClearPropertyMaskBuffer.compute")]
-            public ComputeShader decalClearPropertyMaskBufferCS;
 
             // Ambient occlusion
-            [Reload("Runtime/Lighting/ScreenSpaceLighting/GTAO.compute")]
-            public ComputeShader GTAOCS;
-            [Reload("Runtime/Lighting/ScreenSpaceLighting/GTAODenoise.compute")]
-            public ComputeShader GTAODenoiseCS;
-            [Reload("Runtime/Lighting/ScreenSpaceLighting/GTAOBlurAndUpsample.compute")]
-            public ComputeShader GTAOBlurAndUpsample;
+            [Reload("Runtime/Lighting/ScreenSpaceLighting/AmbientOcclusionDownsample1.compute")]
+            public ComputeShader aoDownsample1CS;
+            [Reload("Runtime/Lighting/ScreenSpaceLighting/AmbientOcclusionDownsample2.compute")]
+            public ComputeShader aoDownsample2CS;
+            [Reload("Runtime/Lighting/ScreenSpaceLighting/AmbientOcclusionRender.compute")]
+            public ComputeShader aoRenderCS;
+            [Reload("Runtime/Lighting/ScreenSpaceLighting/AmbientOcclusionUpsample.compute")]
+            public ComputeShader aoUpsampleCS;
+            [Reload("Runtime/RenderPipeline/RenderPass/MSAA/AmbientOcclusionResolve.shader")]
+            public Shader aoResolvePS;
 
             // MSAA Shaders
             [Reload("Runtime/RenderPipeline/RenderPass/MSAA/DepthValues.shader")]
@@ -183,8 +171,6 @@ namespace UnityEngine.Rendering.HighDefinition
             public Shader colorResolvePS;
 
             // Post-processing
-            [Reload("Runtime/PostProcessing/Shaders/AlphaCopy.compute")]
-            public ComputeShader copyAlphaCS;
             [Reload("Runtime/PostProcessing/Shaders/NaNKiller.compute")]
             public ComputeShader nanKillerCS;
             [Reload("Runtime/PostProcessing/Shaders/Exposure.compute")]
@@ -193,6 +179,8 @@ namespace UnityEngine.Rendering.HighDefinition
             public ComputeShader uberPostCS;
             [Reload("Runtime/PostProcessing/Shaders/LutBuilder3D.compute")]
             public ComputeShader lutBuilder3DCS;
+            [Reload("Runtime/PostProcessing/Shaders/TemporalAntialiasing.compute")]
+            public ComputeShader temporalAntialiasingCS;
             [Reload("Runtime/PostProcessing/Shaders/DepthOfFieldKernel.compute")]
             public ComputeShader depthOfFieldKernelCS;
             [Reload("Runtime/PostProcessing/Shaders/DepthOfFieldCoC.compute")]
@@ -235,8 +223,6 @@ namespace UnityEngine.Rendering.HighDefinition
             public Shader clearBlackPS;
             [Reload("Runtime/PostProcessing/Shaders/SubpixelMorphologicalAntialiasing.shader")]
             public Shader SMAAPS;
-            [Reload("Runtime/PostProcessing/Shaders/TemporalAntialiasing.shader")]
-            public Shader temporalAntialiasingPS;
 
             // Iterator to retrieve all compute shaders in reflection so we don't have to keep a list of
             // used compute shaders up to date (prefer editor-only usage)
@@ -255,6 +241,15 @@ namespace UnityEngine.Rendering.HighDefinition
         [Serializable, ReloadGroup]
         public sealed class MaterialResources
         {
+            // Defaults
+            [Reload("Runtime/RenderPipelineResources/Material/DefaultHDMaterial.mat")]
+            public Material defaultDiffuseMat;
+            [Reload("Runtime/RenderPipelineResources/Material/DefaultHDMirrorMaterial.mat")]
+            public Material defaultMirrorMat;
+            [Reload("Runtime/RenderPipelineResources/Material/DefaultHDDecalMaterial.mat")]
+            public Material defaultDecalMat;
+            [Reload("Runtime/RenderPipelineResources/Material/DefaultHDTerrainMaterial.mat")]
+            public Material defaultTerrainMat;
         }
 
         [Serializable, ReloadGroup]
@@ -273,24 +268,10 @@ namespace UnityEngine.Rendering.HighDefinition
             public Texture2D[] blueNoise16LTex;
             [Reload("Runtime/RenderPipelineResources/Texture/BlueNoise16/RGB/LDR_RGB1_{0}.png", 0, 32)]
             public Texture2D[] blueNoise16RGBTex;
-            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/OwenScrambledNoise4.png")]
-            public Texture2D owenScrambledRGBATex;
-            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/OwenScrambledNoise256.png")]
-            public Texture2D owenScrambled256Tex;
+            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/OwenScrambledNoise.png")]
+            public Texture2D owenScrambledTex;
             [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/ScrambleNoise.png")]
             public Texture2D scramblingTex;
-            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/RankingTile1SPP.png")]
-            public Texture2D rankingTile1SPP;
-            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/ScramblingTile1SPP.png")]
-            public Texture2D scramblingTile1SPP;
-            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/RankingTile8SPP.png")]
-            public Texture2D rankingTile8SPP;
-            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/ScramblingTile8SPP.png")]
-            public Texture2D scramblingTile8SPP;
-            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/RankingTile256SPP.png")]
-            public Texture2D rankingTile256SPP;
-            [Reload("Runtime/RenderPipelineResources/Texture/CoherentNoise/ScramblingTile256SPP.png")]
-            public Texture2D scramblingTile256SPP;
 
             // Post-processing
             [Reload(new[]
@@ -311,9 +292,6 @@ namespace UnityEngine.Rendering.HighDefinition
             public Texture2D   SMAASearchTex;
             [Reload("Runtime/RenderPipelineResources/Texture/SMAA/AreaTex.tga")]
             public Texture2D   SMAAAreaTex;
-
-            [Reload("Runtime/RenderPipelineResources/Texture/DefaultHDRISky.exr")]
-            public Cubemap     defaultHDRISky;
         }
 
         [Serializable, ReloadGroup]

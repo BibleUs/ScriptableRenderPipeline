@@ -33,8 +33,6 @@ Shader "HDRP/TerrainLit"
 
         [ToggleUI] _EnableInstancedPerPixelNormal("Instanced per pixel normal", Float) = 1.0
 
-		[HideInInspector] _TerrainHolesTexture("Holes Map (RGB)", 2D) = "white" {}
-
         // Caution: C# code in BaseLitUI.cs call LightmapEmissionFlagsProperty() which assume that there is an existing "_EmissionColor"
         // value that exist to identify if the GI emission need to be enabled.
         // In our case we don't use such a mechanism but need to keep the code quiet. We declare the value and always enable it.
@@ -47,8 +45,6 @@ Shader "HDRP/TerrainLit"
 
         [HideInInspector] [ToggleUI] _SupportDecals("Support Decals", Float) = 1.0
         [HideInInspector] [ToggleUI] _ReceivesSSR("Receives SSR", Float) = 1.0
-        [HideInInspector] [ToggleUI] _AddPrecomputedVelocity("AddPrecomputedVelocity", Float) = 0.0
-
     }
 
     HLSLINCLUDE
@@ -71,13 +67,10 @@ Shader "HDRP/TerrainLit"
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR3 _LAYER_MAPPING_TRIPLANAR3
 
     #pragma shader_feature_local _DISABLE_DECALS
-    #pragma shader_feature_local _ADD_PRECOMPUTED_VELOCITY
 
     //enable GPU instancing support
     #pragma multi_compile_instancing
     #pragma instancing_options assumeuniformscaling nomatrices nolightprobe nolightmap
-
-	#pragma multi_compile _ _ALPHATEST_ON
 
     // All our shaders use same name for entry point
     #pragma vertex Vert
@@ -248,9 +241,9 @@ Shader "HDRP/TerrainLit"
             #pragma multi_compile _ SHADOWS_SHADOWMASK
             // Setup DECALS_OFF so the shader stripper can remove variants
             #pragma multi_compile DECALS_OFF DECALS_3RT DECALS_4RT
-
+            
             // Supported shadow modes per light type
-            #pragma multi_compile SHADOW_LOW SHADOW_MEDIUM SHADOW_HIGH
+            #pragma multi_compile SHADOW_LOW SHADOW_MEDIUM SHADOW_HIGH SHADOW_VERY_HIGH
 
             #pragma multi_compile USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
 
@@ -261,26 +254,11 @@ Shader "HDRP/TerrainLit"
             ENDHLSL
         }
 
-        Pass
-        {
-            Name "SceneSelectionPass"
-            Tags { "LightMode" = "SceneSelectionPass" }
-
-            HLSLPROGRAM
-
-            #pragma editor_sync_compilation
-            #define SHADERPASS SHADERPASS_DEPTH_ONLY
-            #define SCENESELECTIONPASS
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitTemplate.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLit_Splatmap.hlsl"
-
-            ENDHLSL
-        }
-
         UsePass "Hidden/Nature/Terrain/Utilities/PICKING"
+        UsePass "Hidden/Nature/Terrain/Utilities/SELECTION"
     }
 
     Dependency "BaseMapShader" = "Hidden/HDRP/TerrainLit_Basemap"
     Dependency "BaseMapGenShader" = "Hidden/HDRP/TerrainLit_BasemapGen"
-    CustomEditor "UnityEditor.Rendering.HighDefinition.TerrainLitGUI"
+    CustomEditor "UnityEditor.Experimental.Rendering.HDPipeline.TerrainLitGUI"
 }

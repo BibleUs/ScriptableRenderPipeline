@@ -1,6 +1,3 @@
-#ifndef __BUILTINUTILITIES_HLSL__
-#define __BUILTINUTILITIES_HLSL__
-
 // Return camera relative probe volume world to object transformation
 float4x4 GetProbeVolumeWorldToObject()
 {
@@ -31,7 +28,7 @@ float3 SampleBakedGI(float3 positionRWS, float3 normalWS, float2 uvStaticLightma
     }
     else
     {
-#if RAYTRACING_ENABLED
+#if SHADEROPTIONS_RAYTRACING
         if (unity_ProbeVolumeParams.w == 1.0)
             return SampleProbeVolumeSH9(TEXTURE3D_ARGS(unity_ProbeVolumeSH, samplerunity_ProbeVolumeSH), positionRWS, normalWS, GetProbeVolumeWorldToObject(),
                 unity_ProbeVolumeParams.y, unity_ProbeVolumeParams.z, unity_ProbeVolumeMin.xyz, unity_ProbeVolumeSizeInv.xyz);
@@ -139,7 +136,7 @@ void InitBuiltinData(PositionInputs posInput, float alpha, float3 normalWS, floa
 
     builtinData.opacity = alpha;
 
-#if RAYTRACING_ENABLED && (SHADERPASS == SHADERPASS_GBUFFER || SHADERPASS == SHADERPASS_FORWARD)
+#if SHADEROPTIONS_RAYTRACING
     if (_RaytracedIndirectDiffuse == 1)
     {
         #if SHADERPASS == SHADERPASS_GBUFFER
@@ -149,7 +146,6 @@ void InitBuiltinData(PositionInputs posInput, float alpha, float3 normalWS, floa
 
         #if SHADERPASS == SHADERPASS_FORWARD
         builtinData.bakeDiffuseLighting = LOAD_TEXTURE2D_X(_IndirectDiffuseTexture, posInput.positionSS).xyz;
-        builtinData.bakeDiffuseLighting *= GetInverseCurrentExposureMultiplier();
         #endif
     }
     else
@@ -207,17 +203,8 @@ void PostInitBuiltinData(   float3 V, PositionInputs posInput, SurfaceData surfa
     // color in case of lit deferred for example and avoid material to have to deal with it
     builtinData.bakeDiffuseLighting *= _IndirectLightingMultiplier.x;
     builtinData.backBakeDiffuseLighting *= _IndirectLightingMultiplier.x;
-
 #ifdef MODIFY_BAKED_DIFFUSE_LIGHTING
-
-#ifdef DEBUG_DISPLAY
-    // When the lux meter is enabled, we don't want the albedo of the material to modify the diffuse baked lighting
-    if (_DebugLightingMode != DEBUGLIGHTINGMODE_LUX_METER)
-#endif
-        ModifyBakedDiffuseLighting(V, posInput, surfaceData, builtinData);
-
+    ModifyBakedDiffuseLighting(V, posInput, surfaceData, builtinData);
 #endif
     ApplyDebugToBuiltinData(builtinData);
 }
-
-#endif //__BUILTINUTILITIES_HLSL__

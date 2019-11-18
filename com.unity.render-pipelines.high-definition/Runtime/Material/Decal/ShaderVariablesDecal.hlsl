@@ -9,10 +9,8 @@ StructuredBuffer<DecalData> _DecalDatas;
 TEXTURE2D(_DecalAtlas2D);
 SAMPLER(_trilinear_clamp_sampler_DecalAtlas2D);
 
-#ifdef PLATFORM_SUPPORTS_BUFFER_ATOMICS_IN_PIXEL_SHADER
-RWStructuredBuffer<uint> _DecalPropertyMaskBuffer;
-StructuredBuffer<uint> _DecalPropertyMaskBufferSRV;
-#endif
+RW_TEXTURE2D_X(uint, _DecalHTile); 
+TEXTURE2D_X_UINT(_DecalHTileTexture); //
 
 UNITY_INSTANCING_BUFFER_START(Decal)
 UNITY_DEFINE_INSTANCED_PROP(float4x4, _NormalToWorld)

@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using UnityEngine;
 using System.Reflection;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Experimental.Rendering.HDPipeline;
 using Object = UnityEngine.Object;
 using System;
 
-namespace UnityEditor.Rendering.HighDefinition
+namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
     interface IHDProbeEditor
     {
@@ -81,35 +81,22 @@ namespace UnityEditor.Rendering.HighDefinition
             CoreEditorDrawer<TSerialized>.Group(
                 CoreEditorDrawer<TSerialized>.FoldoutGroup(HDProbeUI.k_ProxySettingsHeader, HDProbeUI.Expandable.Projection, HDProbeUI.k_ExpandedState,
                     HDProbeUI.Drawer<TProvider>.DrawProjectionSettings),
-                CoreEditorDrawer<TSerialized>.AdvancedFoldoutGroup(HDProbeUI.k_InfluenceVolumeHeader, HDProbeUI.Expandable.Influence, HDProbeUI.k_ExpandedState,
-                    (s, o) => s.GetEditorOnlyData(SerializedHDProbe.EditorOnlyData.InfluenceVolumeIsAdvanced),
-                    (s, o) =>
-                    {
-                        InfluenceVolumeUI.SetInfluenceAdvancedControlSwitch(s.probeSettings.influence, o, advancedControl: !s.GetEditorOnlyData(SerializedHDProbe.EditorOnlyData.InfluenceVolumeIsAdvanced));
-                        s.ToggleEditorOnlyData(SerializedHDProbe.EditorOnlyData.InfluenceVolumeIsAdvanced);
-                    },
-                    CoreEditorDrawer<TSerialized>.Group(
-                        HDProbeUI.Drawer<TProvider>.DrawInfluenceSettings, //handle both advanced control and normal control
-                        HDProbeUI.Drawer_DifferentShapeError
+                CoreEditorDrawer<TSerialized>.FoldoutGroup(HDProbeUI.k_InfluenceVolumeHeader, HDProbeUI.Expandable.Influence, HDProbeUI.k_ExpandedState,
+                    HDProbeUI.Drawer<TProvider>.DrawInfluenceSettings,
+                    HDProbeUI.Drawer_DifferentShapeError
                     ),
-                    CoreEditorDrawer<TSerialized>.noop
-                ),
                 CoreEditorDrawer<TSerialized>.AdvancedFoldoutGroup(HDProbeUI.k_CaptureSettingsHeader, HDProbeUI.Expandable.Capture, HDProbeUI.k_ExpandedState,
                     (s, o) => s.GetEditorOnlyData(SerializedHDProbe.EditorOnlyData.CaptureSettingsIsAdvanced),
                     (s, o) => s.ToggleEditorOnlyData(SerializedHDProbe.EditorOnlyData.CaptureSettingsIsAdvanced),
-                    CoreEditorDrawer<TSerialized>.Group(
-                        DrawAdditionalCaptureSettings,
+                    CoreEditorDrawer<TSerialized>.Group(DrawAdditionalCaptureSettings,
                         HDProbeUI.Drawer<TProvider>.DrawCaptureSettings
                     ),
                     HDProbeUI.Drawer<TProvider>.DrawAdvancedCaptureSettings
-                ),
-                CoreEditorDrawer<TSerialized>.AdvancedFoldoutGroup(HDProbeUI.k_CustomSettingsHeader, HDProbeUI.Expandable.Custom, HDProbeUI.k_ExpandedState,
-                    (s, o) => s.GetEditorOnlyData(SerializedHDProbe.EditorOnlyData.CustomSettingsIsAdvanced),
-                    (s, o) => s.ToggleEditorOnlyData(SerializedHDProbe.EditorOnlyData.CustomSettingsIsAdvanced),
-                    HDProbeUI.Drawer<TProvider>.DrawCustomSettings,
-                    HDProbeUI.Drawer<TProvider>.DrawAdvancedCustomSettings),
+                    ),
+                CoreEditorDrawer<TSerialized>.FoldoutGroup(HDProbeUI.k_CustomSettingsHeader, HDProbeUI.Expandable.Custom, HDProbeUI.k_ExpandedState,
+                    HDProbeUI.Drawer<TProvider>.DrawCustomSettings),
                 CoreEditorDrawer<TSerialized>.Group(HDProbeUI.Drawer<TProvider>.DrawBakeButton)
-            ).Draw(serialized, owner);
+                ).Draw(serialized, owner);
         }
 
         protected virtual void DrawHandles(TSerialized serialized, Editor owner) { }

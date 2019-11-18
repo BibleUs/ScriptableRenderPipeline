@@ -8,11 +8,11 @@ namespace UnityEditor.VFX.Block
     [VFXInfo(category = "Collision")]
     class CollisionPlane : CollisionBase
     {
-        public override string name { get { return "Collide with Plane"; } }
+        public override string name { get { return "Collider (Plane)"; } }
 
         public class InputProperties
         {
-            [Tooltip("Sets the plane with which particles can collide.")]
+            [Tooltip("The collision plane.")]
             public Plane Plane = new Plane() { normal = Vector3.up };
         }
 

@@ -3,44 +3,40 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.VFX;
 
-namespace UnityEditor.VFX
-{
-    public enum VFXSeedMode
-    {
-        PerParticle,
-        PerComponent,
-        PerParticleStrip,
-    }
-}
-
 namespace UnityEditor.VFX.Operator
 {
     [VFXInfo(category = "Random")]
     class Random : VFXOperator
     {
+        public enum SeedMode
+        {
+            PerParticle,
+            PerComponent,
+        }
+
         public class InputProperties
         {
-            [Tooltip("Sets the minimum range of the random value.")]
+            [Tooltip("The minimum value to be generated.")]
             public float min = 0.0f;
-            [Tooltip("Sets the maximum range of the random value.")]
+            [Tooltip("The maximum value to be generated.")]
             public float max = 1.0f;
         }
 
         public class ConstantInputProperties
         {
-            [Tooltip("Sets the value used when determining the random number. Using the same seed results in the same random number every time.")]
+            [Tooltip("Seed to compute the constant random")]
             public uint seed = 0u;
         }
 
         public class OutputProperties
         {
-            [Tooltip("Outputs a random number between the min and max range.")]
+            [Tooltip("A random number between 0 and 1.")]
             public float r;
         }
 
-        [VFXSetting, Tooltip("Specifies whether the random number is generated for each particle, each particle strip, or is shared by the whole system.")]
-        public VFXSeedMode seed = VFXSeedMode.PerParticle;
-        [VFXSetting, Tooltip("When enabled, the random number will remain constant. Otherwise, it will change every time it is evaluated.")]
+        [VFXSetting, Tooltip("Generate a random number for each particle, or one that is shared by the whole system.")]
+        public SeedMode seed = SeedMode.PerParticle;
+        [VFXSetting, Tooltip("The random number may either remain constant, or change every time it is evaluated.")]
         public bool constant = true;
 
         override public string name { get { return "Random Number"; } }
@@ -50,30 +46,19 @@ namespace UnityEditor.VFX.Operator
             get
             {
                 var props = PropertiesFromType("InputProperties");
-                if (constant || seed == VFXSeedMode.PerParticleStrip)
+                if (constant)
                     props = props.Concat(PropertiesFromType("ConstantInputProperties"));
                 return props;
-            }
-        }
-
-        protected override IEnumerable<string> filteredOutSettings
-        {
-            get
-            {
-                foreach (var s in base.filteredOutSettings)
-                    yield return s;
-                if (seed == VFXSeedMode.PerParticleStrip)
-                    yield return "constant";
             }
         }
 
         protected override sealed VFXExpression[] BuildExpression(VFXExpression[] inputExpression)
         {
             VFXExpression rand = null;
-            if (seed == VFXSeedMode.PerParticleStrip || constant)
-                rand = VFXOperatorUtility.FixedRandom(inputExpression[2], seed);
+            if (constant)
+                rand = VFXOperatorUtility.FixedRandom(inputExpression[2], seed == SeedMode.PerParticle);
             else
-                rand = new VFXExpressionRandom(seed == VFXSeedMode.PerParticle);
+                rand = new VFXExpressionRandom(seed == SeedMode.PerParticle);
 
             return new[] { VFXOperatorUtility.Lerp(inputExpression[0], inputExpression[1], rand) };
         }

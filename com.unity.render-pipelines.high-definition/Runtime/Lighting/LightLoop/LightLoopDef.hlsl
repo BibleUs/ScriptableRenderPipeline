@@ -1,11 +1,5 @@
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.cs.hlsl"
 
-// SCREEN_SPACE_SHADOWS needs to be defined in all cases in which they need to run. IMPORTANT: If this is activated, the light loop function WillRenderScreenSpaceShadows on C# MUST return true.
-#if RAYTRACING_ENABLED && (SHADERPASS != SHADERPASS_RAYTRACING_INDIRECT)
-// TODO: This will need to be a multi_compile when we'll have them on compute shaders.
-#define SCREEN_SPACE_SHADOWS 1
-#endif
-
 #define DWORD_PER_TILE 16 // See dwordsPerTile in LightLoop.cs, we have roomm for 31 lights and a number of light value all store on 16 bit (ushort)
 
 // LightLoopContext is not visible from Material (user should not use these properties in Material file)
@@ -17,8 +11,8 @@ struct LightLoopContext
     HDShadowContext shadowContext;
     
     uint contactShadow;         // a bit mask of 24 bits that tell if the pixel is in a contact shadow or not
-    real contactShadowFade;    // combined fade factor of all contact shadows 
-    real shadowValue;          // Stores the value of the cascade shadow map
+    float contactShadowFade;    // combined fade factor of all contact shadows 
+    float shadowValue;          // Stores the value of the cascade shadow map
 };
 
 //-----------------------------------------------------------------------------
@@ -71,7 +65,7 @@ EnvLightData InitSkyEnvLightData(int envIndex)
     output.influencePositionRWS = float3(0.0, 0.0, 0.0);
 
     output.weight = 1.0;
-    output.multiplier = _EnableSkyReflection.x != 0 ? 1.0 : 0.0;
+    output.multiplier = ReplaceDiffuseForReflectionPass(float3(1.0, 1.0, 1.0)) ? 0.0 : 1.0;
 
     // proxy
     output.proxyForward = float3(0.0, 0.0, 1.0);
@@ -89,7 +83,7 @@ bool IsEnvIndexTexture2D(int index) { return index < 0; }
 // EnvIndex can also be use to fetch in another array of struct (to  atlas information etc...).
 // Cubemap      : texCoord = direction vector
 // Texture2D    : texCoord = projectedPositionWS - lightData.capturePosition
-float4 SampleEnv(LightLoopContext lightLoopContext, int index, float3 texCoord, float lod, float rangeCompressionFactorCompensation, int sliceIdx = 0)
+float4 SampleEnv(LightLoopContext lightLoopContext, int index, float3 texCoord, float lod, int sliceIdx = 0)
 {
     // 31 bit index, 1 bit cache type
     uint cacheType = IsEnvIndexCubemap(index) ? ENVCACHETYPE_CUBEMAP : ENVCACHETYPE_TEXTURE2D;
@@ -127,8 +121,6 @@ float4 SampleEnv(LightLoopContext lightLoopContext, int index, float3 texCoord, 
         {
             color.rgb = SAMPLE_TEXTURECUBE_ARRAY_LOD_ABSTRACT(_EnvCubemapTextures, s_trilinear_clamp_sampler, texCoord, _EnvSliceSize * index + sliceIdx, lod).rgb;
         }
-
-        color.rgb *= rangeCompressionFactorCompensation;
     }
     else // SINGLE_PASS_SAMPLE_SKY
     {
@@ -365,13 +357,13 @@ void InitContactShadow(PositionInputs posInput, inout LightLoopContext context)
     UnpackContactShadowData(packedContactShadow, context.contactShadowFade, context.contactShadow);
 }
 
-float GetContactShadow(LightLoopContext lightLoopContext, int contactShadowMask, float rayTracedShadow)
+float GetContactShadow(LightLoopContext lightLoopContext, int contactShadowMask)
 {
     bool occluded = (lightLoopContext.contactShadow & contactShadowMask) != 0;
-    return 1.0 - occluded * lerp(lightLoopContext.contactShadowFade, 1.0, rayTracedShadow) * _ContactShadowOpacity;
+    return 1.0 - (occluded * lightLoopContext.contactShadowFade);
 }
 
-float GetScreenSpaceShadow(PositionInputs posInput, int shadowIndex)
+float GetScreenSpaceShadow(PositionInputs posInput)
 {
-    return LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(shadowIndex)).x;
+    return LOAD_TEXTURE2D_X(_ScreenSpaceShadowsTexture, posInput.positionSS).x;
 }

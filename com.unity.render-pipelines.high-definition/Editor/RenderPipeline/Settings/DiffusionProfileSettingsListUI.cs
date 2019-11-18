@@ -1,13 +1,13 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Experimental.Rendering.HDPipeline;
 using UnityEditor.Rendering;
 using UnityEditorInternal;
 using System;
 
-namespace UnityEditor.Rendering.HighDefinition
+namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
-    class DiffusionProfileSettingsListUI
+    public class DiffusionProfileSettingsListUI
     {
         ReorderableList         m_DiffusionProfileList;
         SerializedProperty      m_Property;
@@ -21,7 +21,7 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             m_ListName = listName;
         }
-
+        
         public void OnGUI(SerializedProperty parameter)
         {
             if (parameter.hasMultipleDifferentValues)

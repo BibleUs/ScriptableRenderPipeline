@@ -21,14 +21,12 @@ namespace UnityEditor.VFX.UI
             {
                 if (m_Controller != null)
                 {
-                    m_Controller.context.UnregisterHandler(this);
                     m_Controller.UnregisterHandler(this);
                 }
                 m_Controller = value;
                 if (m_Controller != null)
                 {
                     m_Controller.RegisterHandler(this);
-                    m_Controller.context.RegisterHandler(this);
                 }
             }
         }
@@ -58,14 +56,6 @@ namespace UnityEditor.VFX.UI
             {
                 SelfChange();
             }
-            else if( e.controller == controller.context)
-            {
-                UpdateType();
-
-                //Need to force refreshof the edge in case the color change because of a setting of the context ( hasStrip ).
-                foreach( var edge in connections)
-                    edge.MarkDirtyRepaint();
-            }
         }
 
         void SelfChange()
@@ -78,31 +68,26 @@ namespace UnityEditor.VFX.UI
                 RemoveFromClassList("connected");
 
 
+            var type = controller.direction == Direction.Input ? controller.context.model.inputType : controller.context.model.outputType;
 
             switch (controller.direction)
             {
                 case Direction.Input:
-                    {
-                        RemoveFromClassList("Output");
-                        AddToClassList("Input");
-                    }
-                    break;
+                {
+                    RemoveFromClassList("Output");
+                    AddToClassList("Input");
+                }
+                break;
                 case Direction.Output:
                     RemoveFromClassList("Input");
                     AddToClassList("Output");
                     break;
             }
 
-            UpdateType();
-        }
 
-        private void UpdateType()
-        {
-            VFXDataType type = controller.direction == Direction.Input ? controller.context.model.inputType : controller.context.model.outputType;
-            foreach (VFXDataType value in System.Enum.GetValues(typeof(VFXDataType)))
+            foreach (var value in System.Enum.GetNames(typeof(VFXDataType)))
             {
-                if( value != type)
-                    RemoveFromClassList("type" + VFXContextUI.ContextEnumToClassName(value.ToString()));
+                RemoveFromClassList("type" + VFXContextUI.ContextEnumToClassName(value));
             }
             AddToClassList("type" + VFXContextUI.ContextEnumToClassName(type.ToString()));
         }

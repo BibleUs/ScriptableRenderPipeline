@@ -9,7 +9,7 @@ using Delegate = System.Delegate;
 
 namespace UnityEditor.VFX.UI
 {
-    static class VFXGizmoUtility
+    public static class VFXGizmoUtility
     {
         static Dictionary<System.Type, GizmoContext> s_DrawFunctions;
 

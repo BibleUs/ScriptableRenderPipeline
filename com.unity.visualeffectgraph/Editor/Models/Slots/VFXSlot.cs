@@ -717,7 +717,7 @@ namespace UnityEditor.VFX
             }
         }
 
-        protected internal override void Invalidate(VFXModel model, InvalidationCause cause)
+        protected override void Invalidate(VFXModel model, InvalidationCause cause)
         {
             base.Invalidate(model, cause);
 
@@ -803,9 +803,9 @@ namespace UnityEditor.VFX
                 return false;
 
             if (direction == Direction.kOutput)
-                InnerLink(this, other, notify);
+                InnerLink(this, other);
             else
-                InnerLink(other, this, notify);
+                InnerLink(other, this);
 
             if (notify)
             {
@@ -1008,7 +1008,7 @@ namespace UnityEditor.VFX
             return exp;
         }
 
-        public void SetOutExpression(VFXExpression exp, HashSet<VFXSlot> toInvalidate, VFXCoordinateSpace convertToSpace = (VFXCoordinateSpace)int.MaxValue)
+        private void SetOutExpression(VFXExpression exp, HashSet<VFXSlot> toInvalidate, VFXCoordinateSpace convertToSpace = (VFXCoordinateSpace)int.MaxValue)
         {
             exp = VFXPropertyAttribute.ApplyToExpressionGraph(m_Property.attributes, exp);
             if (convertToSpace != (VFXCoordinateSpace)int.MaxValue)
@@ -1113,10 +1113,10 @@ namespace UnityEditor.VFX
             base.OnInvalidate(model, cause);
         }
 
-        private static void InnerLink(VFXSlot output, VFXSlot input, bool notify)
+        private static void InnerLink(VFXSlot output, VFXSlot input)
         {
-            input.UnlinkAll(false, notify); // First disconnect any other linked slot
-            input.PropagateToTree(s => s.UnlinkAll(false, notify)); // Unlink other links in tree
+            input.UnlinkAll(); // First disconnect any other linked slot
+            input.PropagateToTree(s => s.UnlinkAll()); // Unlink other links in tree
 
             input.m_LinkedSlots.Add(output);
             output.m_LinkedSlots.Add(input);

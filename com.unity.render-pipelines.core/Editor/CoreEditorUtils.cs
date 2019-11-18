@@ -6,7 +6,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering
 {
@@ -14,103 +13,6 @@ namespace UnityEditor.Rendering
 
     public static class CoreEditorUtils
     {
-        class Styles
-        {
-            static readonly Color k_Normal_AllTheme = new Color32(0, 0, 0, 0);
-            //static readonly Color k_Hover_Dark = new Color32(70, 70, 70, 255);
-            //static readonly Color k_Hover = new Color32(193, 193, 193, 255);
-            static readonly Color k_Active_Dark = new Color32(80, 80, 80, 255);
-            static readonly Color k_Active = new Color32(216, 216, 216, 255);
-
-            static readonly int s_MoreOptionsHash = "MoreOptions".GetHashCode();
-
-            static public GUIContent moreOptionsLabel { get; private set; }
-            static public GUIStyle moreOptionsStyle { get; private set; }
-            static public GUIStyle moreOptionsLabelStyle { get; private set; }
-
-            static Styles()
-            {
-                moreOptionsLabel = EditorGUIUtility.TrIconContent("MoreOptions", "More Options");
-
-                moreOptionsStyle = new GUIStyle(GUI.skin.toggle);
-                Texture2D normalColor = new Texture2D(1, 1);
-                normalColor.SetPixel(1, 1, k_Normal_AllTheme);
-                moreOptionsStyle.normal.background = normalColor;
-                moreOptionsStyle.onActive.background = normalColor;
-                moreOptionsStyle.onFocused.background = normalColor;
-                moreOptionsStyle.onNormal.background = normalColor;
-                moreOptionsStyle.onHover.background = normalColor;
-                moreOptionsStyle.active.background = normalColor;
-                moreOptionsStyle.focused.background = normalColor;
-                moreOptionsStyle.hover.background = normalColor;
-                
-                moreOptionsLabelStyle = new GUIStyle(GUI.skin.label);
-                moreOptionsLabelStyle.padding = new RectOffset(0, 0, 0, -1);
-            }
-
-            //Note:
-            // - GUIStyle seams to be broken: all states have same state than normal light theme
-            // - Hover with event will not be updated right when we enter the rect
-            //-> Removing hover for now. Keep theme color for refactoring with UIElement later
-            static public bool DrawMoreOptions(Rect rect, bool active)
-            {
-                int id = GUIUtility.GetControlID(s_MoreOptionsHash, FocusType.Passive, rect);
-                var evt = Event.current;
-                switch (evt.type)
-                {
-                    case EventType.Repaint:
-                        Color background = k_Normal_AllTheme;
-                        if (active)
-                            background = EditorGUIUtility.isProSkin ? k_Active_Dark : k_Active;
-                        EditorGUI.DrawRect(rect, background);
-                        GUI.Label(rect, moreOptionsLabel, moreOptionsLabelStyle);
-                        break;
-                    case EventType.KeyDown:
-                        bool anyModifiers = (evt.alt || evt.shift || evt.command || evt.control);
-                        if ((evt.keyCode == KeyCode.Space || evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && !anyModifiers && GUIUtility.keyboardControl == id)
-                        {
-                            evt.Use();
-                            GUI.changed = true;
-                            return !active;
-                        }
-                        break;
-                    case EventType.MouseDown:
-                        if (rect.Contains(evt.mousePosition))
-                        {
-                            GrabMouseControl(id);
-                            evt.Use();
-                        }
-                        break;
-                    case EventType.MouseUp:
-                        if (HasMouseControl(id))
-                        {
-                            ReleaseMouseControl();
-                            evt.Use();
-                            if (rect.Contains(evt.mousePosition))
-                            {
-                                GUI.changed = true;
-                                return !active;
-                            }
-                        }
-                        break;
-                    case EventType.MouseDrag:
-                        if (HasMouseControl(id))
-                            evt.Use();
-                        break;
-                }
-                
-                return active;
-            }
-
-            static int s_GrabbedID = -1;
-            static void GrabMouseControl(int id) => s_GrabbedID = id;
-            static void ReleaseMouseControl() => s_GrabbedID = -1;
-            static bool HasMouseControl(int id) => s_GrabbedID == id;
-        }
-
-        static GraphicsDeviceType[] m_BuildTargets;
-        public static GraphicsDeviceType[] buildTargets => m_BuildTargets ?? (m_BuildTargets = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget));
-
         static CoreEditorUtils()
         {
             LoadSkinAndIconMethods();
@@ -209,7 +111,7 @@ namespace UnityEditor.Rendering
             
             if (isBoxed)
             {
-                rect.xMin = EditorGUIUtility.singleLineHeight;
+                rect.xMin = EditorGUIUtility.singleLineHeight - 2;
                 rect.width -= 1;
             }
 
@@ -253,18 +155,18 @@ namespace UnityEditor.Rendering
         /// <param name="title"> The title of the header </param>
         /// <param name="state"> The state of the header </param>
         /// <param name="isBoxed"> [optional] is the eader contained in a box style ? </param>
-        /// <param name="hasMoreOptions"> [optional] Delegate used to draw the right state of the advanced button. If null, no button drawn. </param>
-        /// <param name="toggleMoreOption"> [optional] Callback call when advanced button clicked. Should be used to toggle its state. </param>
-        public static bool DrawHeaderFoldout(string title, bool state, bool isBoxed = false, Func<bool> hasMoreOptions = null, Action toggleMoreOption = null)
-            => DrawHeaderFoldout(EditorGUIUtility.TrTextContent(title), state, isBoxed, hasMoreOptions, toggleMoreOption);
+        /// <param name="isAdvanced"> [optional] Delegate used to draw the right state of the advanced button. If null, no button drawn. </param>
+        /// <param name="switchAdvanced"> [optional] Callback call when advanced button clicked. Should be used to toggle its state. </param>
+        public static bool DrawHeaderFoldout(string title, bool state, bool isBoxed = false, Func<bool> isAdvanced = null, Action switchAdvanced = null)
+            => DrawHeaderFoldout(EditorGUIUtility.TrTextContent(title), state, isBoxed, isAdvanced, switchAdvanced);
 
         /// <summary> Draw a foldout header </summary>
         /// <param name="title"> The title of the header </param>
         /// <param name="state"> The state of the header </param>
         /// <param name="isBoxed"> [optional] is the eader contained in a box style ? </param>
-        /// <param name="hasMoreOptions"> [optional] Delegate used to draw the right state of the advanced button. If null, no button drawn. </param>
-        /// <param name="toggleMoreOptions"> [optional] Callback call when advanced button clicked. Should be used to toggle its state. </param>
-        public static bool DrawHeaderFoldout(GUIContent title, bool state, bool isBoxed = false, Func<bool> hasMoreOptions = null, Action toggleMoreOptions = null)
+        /// <param name="isAdvanced"> [optional] Delegate used to draw the right state of the advanced button. If null, no button drawn. </param>
+        /// <param name="switchAdvanced"> [optional] Callback call when advanced button clicked. Should be used to toggle its state. </param>
+        public static bool DrawHeaderFoldout(GUIContent title, bool state, bool isBoxed = false, Func<bool> isAdvanced = null, Action switchAdvanced = null)
         {
             const float height = 17f;
             var backgroundRect = GUILayoutUtility.GetRect(1f, height);
@@ -277,15 +179,33 @@ namespace UnityEditor.Rendering
             foldoutRect.y += 1f;
             foldoutRect.width = 13f;
             foldoutRect.height = 13f;
-
-            // More options 1/2
-            var moreOptionsRect = new Rect();
-            if (hasMoreOptions != null)
+            
+            var advancedRect = new Rect();
+            if (isAdvanced != null)
             {
-                moreOptionsRect = backgroundRect;
-                moreOptionsRect.x += moreOptionsRect.width - 16 - 1;
-                moreOptionsRect.height = 15;
-                moreOptionsRect.width = 16;
+                advancedRect = backgroundRect;
+                advancedRect.x += advancedRect.width - 16 - 1;
+                advancedRect.y -= 2;
+                advancedRect.height = 16;
+                advancedRect.width = 16;
+
+                GUIStyle styleAdvanced = new GUIStyle(GUI.skin.toggle);
+                styleAdvanced.normal.background = isAdvanced()
+                    ? Resources.Load<Texture2D>("Advanced_Pressed_mini")
+                    : Resources.Load<Texture2D>("Advanced_UnPressed_mini");
+                styleAdvanced.onActive.background = styleAdvanced.normal.background;
+                styleAdvanced.onFocused.background = styleAdvanced.normal.background;
+                styleAdvanced.onNormal.background = styleAdvanced.normal.background;
+                styleAdvanced.onHover.background = styleAdvanced.normal.background;
+                styleAdvanced.active.background = styleAdvanced.normal.background;
+                styleAdvanced.focused.background = styleAdvanced.normal.background;
+                styleAdvanced.hover.background = styleAdvanced.normal.background;
+                EditorGUI.BeginChangeCheck();
+                GUI.Toggle(advancedRect, isAdvanced(), GUIContent.none, styleAdvanced);
+                if(EditorGUI.EndChangeCheck() && switchAdvanced != null)
+                {
+                    switchAdvanced();
+                }
             }
 
             // Background rect should be full-width
@@ -297,23 +217,12 @@ namespace UnityEditor.Rendering
                 labelRect.xMin += 5;
                 foldoutRect.xMin += 5;
                 backgroundRect.xMin = EditorGUIUtility.singleLineHeight;
-                backgroundRect.width -= 1;
+                backgroundRect.width -= 3;
             }
 
             // Background
             float backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;
             EditorGUI.DrawRect(backgroundRect, new Color(backgroundTint, backgroundTint, backgroundTint, 0.2f));
-
-            // More options 2/2
-            if (hasMoreOptions != null)
-            {
-                EditorGUI.BeginChangeCheck();
-                Styles.DrawMoreOptions(moreOptionsRect, hasMoreOptions());
-                if (EditorGUI.EndChangeCheck() && toggleMoreOptions != null)
-                {
-                    toggleMoreOptions();
-                }
-            }
 
             // Title
             EditorGUI.LabelField(labelRect, title, EditorStyles.boldLabel);
@@ -322,7 +231,7 @@ namespace UnityEditor.Rendering
             state = GUI.Toggle(foldoutRect, state, GUIContent.none, EditorStyles.foldout);
 
             var e = Event.current;
-            if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && !moreOptionsRect.Contains(e.mousePosition) && e.button == 0)
+            if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && !advancedRect.Contains(e.mousePosition) && e.button == 0)
             {
                 state = !state;
                 e.Use();
@@ -335,18 +244,18 @@ namespace UnityEditor.Rendering
         /// <param name="title"> The title of the header </param>
         /// <param name="state"> The state of the header </param>
         /// <param name="isBoxed"> [optional] is the eader contained in a box style ? </param>
-        /// <param name="hasMoreOption"> [optional] Delegate used to draw the right state of the advanced button. If null, no button drawn. </param>
-        /// <param name="toggleMoreOptions"> [optional] Callback call when advanced button clicked. Should be used to toggle its state. </param>
-        public static bool DrawSubHeaderFoldout(string title, bool state, bool isBoxed = false, Func<bool> hasMoreOptions = null, Action toggleMoreOptions = null)
-            => DrawSubHeaderFoldout(EditorGUIUtility.TrTextContent(title), state, isBoxed, hasMoreOptions, toggleMoreOptions);
+        /// <param name="isAdvanced"> [optional] Delegate used to draw the right state of the advanced button. If null, no button drawn. </param>
+        /// <param name="switchAdvanced"> [optional] Callback call when advanced button clicked. Should be used to toggle its state. </param>
+        public static bool DrawSubHeaderFoldout(string title, bool state, bool isBoxed = false, Func<bool> isAdvanced = null, Action switchAdvanced = null)
+            => DrawSubHeaderFoldout(EditorGUIUtility.TrTextContent(title), state, isBoxed, isAdvanced, switchAdvanced);
 
         /// <summary> Draw a foldout header </summary>
         /// <param name="title"> The title of the header </param>
         /// <param name="state"> The state of the header </param>
         /// <param name="isBoxed"> [optional] is the eader contained in a box style ? </param>
-        /// <param name="hasMoreOptions"> [optional] Delegate used to draw the right state of the advanced button. If null, no button drawn. </param>
-        /// <param name="toggleMoreOptions"> [optional] Callback call when advanced button clicked. Should be used to toggle its state. </param>
-        public static bool DrawSubHeaderFoldout(GUIContent title, bool state, bool isBoxed = false, Func<bool> hasMoreOptions = null, Action toggleMoreOptions = null)
+        /// <param name="isAdvanced"> [optional] Delegate used to draw the right state of the advanced button. If null, no button drawn. </param>
+        /// <param name="switchAdvanced"> [optional] Callback call when advanced button clicked. Should be used to toggle its state. </param>
+        public static bool DrawSubHeaderFoldout(GUIContent title, bool state, bool isBoxed = false, Func<bool> isAdvanced = null, Action switchAdvanced = null)
         {
             const float height = 17f;
             var backgroundRect = GUILayoutUtility.GetRect(1f, height);
@@ -361,19 +270,32 @@ namespace UnityEditor.Rendering
             foldoutRect.width = 13f;
             foldoutRect.height = 13f;
 
-            // More options
             var advancedRect = new Rect();
-            if (hasMoreOptions != null)
+            if (isAdvanced != null)
             {
                 advancedRect = backgroundRect;
                 advancedRect.x += advancedRect.width - 16 - 1;
+                advancedRect.y -= 2;
                 advancedRect.height = 16;
                 advancedRect.width = 16;
 
-                bool moreOptions = hasMoreOptions();
-                bool newMoreOptions = Styles.DrawMoreOptions(advancedRect, moreOptions);
-                if (moreOptions ^ newMoreOptions)
-                    toggleMoreOptions?.Invoke();
+                GUIStyle styleAdvanced = new GUIStyle(GUI.skin.toggle);
+                styleAdvanced.normal.background = isAdvanced()
+                    ? Resources.Load<Texture2D>("Advanced_Pressed_mini")
+                    : Resources.Load<Texture2D>("Advanced_UnPressed_mini");
+                styleAdvanced.onActive.background = styleAdvanced.normal.background;
+                styleAdvanced.onFocused.background = styleAdvanced.normal.background;
+                styleAdvanced.onNormal.background = styleAdvanced.normal.background;
+                styleAdvanced.onHover.background = styleAdvanced.normal.background;
+                styleAdvanced.active.background = styleAdvanced.normal.background;
+                styleAdvanced.focused.background = styleAdvanced.normal.background;
+                styleAdvanced.hover.background = styleAdvanced.normal.background;
+                EditorGUI.BeginChangeCheck();
+                GUI.Toggle(advancedRect, isAdvanced(), GUIContent.none, styleAdvanced);
+                if (EditorGUI.EndChangeCheck() && switchAdvanced != null)
+                {
+                    switchAdvanced();
+                }
             }
 
             // Background rect should be full-width
@@ -404,16 +326,16 @@ namespace UnityEditor.Rendering
             return state;
         }
 
-        public static bool DrawHeaderToggle(string title, SerializedProperty group, SerializedProperty activeField, Action<Vector2> contextAction = null, Func<bool> hasMoreOptions = null, Action toggleMoreOptions = null)
-            => DrawHeaderToggle(EditorGUIUtility.TrTextContent(title), group, activeField, contextAction, hasMoreOptions, toggleMoreOptions);
+        public static bool DrawHeaderToggle(string title, SerializedProperty group, SerializedProperty activeField, Action<Vector2> contextAction = null)
+            => DrawHeaderToggle(EditorGUIUtility.TrTextContent(title), group, activeField, contextAction);
 
-        public static bool DrawHeaderToggle(GUIContent title, SerializedProperty group, SerializedProperty activeField, Action<Vector2> contextAction = null, Func<bool> hasMoreOptions = null, Action toggleMoreOptions = null)
+        public static bool DrawHeaderToggle(GUIContent title, SerializedProperty group, SerializedProperty activeField, Action<Vector2> contextAction = null)
         {
             var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
 
             var labelRect = backgroundRect;
             labelRect.xMin += 32f;
-            labelRect.xMax -= 20f + 16 + 5;
+            labelRect.xMax -= 20f;
 
             var foldoutRect = backgroundRect;
             foldoutRect.y += 1f;
@@ -425,16 +347,6 @@ namespace UnityEditor.Rendering
             toggleRect.y += 2f;
             toggleRect.width = 13f;
             toggleRect.height = 13f;
-
-            // More options 1/2
-            var moreOptionsRect = new Rect();
-            if (hasMoreOptions != null)
-            {
-                moreOptionsRect = backgroundRect;
-                moreOptionsRect.x += moreOptionsRect.width - 16 - 1 - 16 - 5;
-                moreOptionsRect.height = 15;
-                moreOptionsRect.width = 16;
-            }
 
             // Background rect should be full-width
             backgroundRect.xMin = 0f;
@@ -458,18 +370,9 @@ namespace UnityEditor.Rendering
             activeField.boolValue = GUI.Toggle(toggleRect, activeField.boolValue, GUIContent.none, CoreEditorStyles.smallTickbox);
             activeField.serializedObject.ApplyModifiedProperties();
 
-            // More options 2/2
-            if (hasMoreOptions != null)
-            {
-                bool moreOptions = hasMoreOptions();
-                bool newMoreOptions = Styles.DrawMoreOptions(moreOptionsRect, moreOptions);
-                if (moreOptions ^ newMoreOptions)
-                    toggleMoreOptions?.Invoke();
-            }
-
             // Context menu
             var menuIcon = CoreEditorStyles.paneOptionsIcon;
-            var menuRect = new Rect(labelRect.xMax + 3f + 16 + 5 , labelRect.y + 1f, menuIcon.width, menuIcon.height);
+            var menuRect = new Rect(labelRect.xMax + 4f, labelRect.y + 4f, menuIcon.width, menuIcon.height);
 
             if (contextAction != null)
                 GUI.DrawTexture(menuRect, menuIcon);
@@ -523,6 +426,8 @@ namespace UnityEditor.Rendering
                 rect.x += EditorGUIUtility.labelWidth - 1f - 15f * EditorGUI.indentLevel;
                 rect.width -= EditorGUIUtility.labelWidth - 1f - 15f * EditorGUI.indentLevel;
             }
+            
+            EditorGUI.BeginChangeCheck();
             DrawVector3(rect, k_DrawVector6_Label, positive, min, max, false, colors == null ? null : new Color[] { colors[0], colors[1], colors[2] }, multiplicator);
 
             GUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
@@ -568,7 +473,7 @@ namespace UnityEditor.Rendering
                 for(int i = 0; i < 3; ++i)
                 {
                     EditorGUI.LabelField(suffixRect, "-");
-                    suffixRect.x += fieldWidth + .33f;
+                    suffixRect.x += fieldWidth + .66f;
                 }
             }
 
@@ -584,12 +489,12 @@ namespace UnityEditor.Rendering
                 EditorGUI.LabelField(suffixRect, "|", colorMark);
                 suffixRect.x += 1;
                 EditorGUI.LabelField(suffixRect, "|", colorMark);
-                suffixRect.x += fieldWidth  + 0.33f;
+                suffixRect.x += fieldWidth  - .5f;
                 colorMark.normal.textColor = colors[1];
                 EditorGUI.LabelField(suffixRect, "|", colorMark);
                 suffixRect.x += 1;
                 EditorGUI.LabelField(suffixRect, "|", colorMark);
-                suffixRect.x += fieldWidth + .33f;
+                suffixRect.x += fieldWidth;
                 colorMark.normal.textColor = colors[2];
                 EditorGUI.LabelField(suffixRect, "|", colorMark);
                 suffixRect.x += 1;
@@ -683,7 +588,7 @@ namespace UnityEditor.Rendering
 
         #region IconAndSkin
 
-        internal enum Skin
+        public enum Skin
         {
             Auto,
             Personnal,
@@ -716,11 +621,11 @@ namespace UnityEditor.Rendering
         }
 
         /// <summary>Get the skin currently in use</summary>
-        static Skin currentSkin
+        public static Skin currentSkin
             => GetInternalSkinIndex() == 0 ? Skin.Personnal : Skin.Professional;
 
 
-        // /!\ UIElement do not support well pixel per point at the moment. For this, use the hack forceLowRes
+
         /// <summary>
         /// Load an icon regarding skin and editor resolution.
         /// Icon should be stored as legacy icon resources:
@@ -731,20 +636,22 @@ namespace UnityEditor.Rendering
         /// <param name="name">Icon name without suffix, prefix or extention</param>
         /// <param name="extention">[Optional] Extention of file (png per default)</param>
         /// <param name="skin">[Optional] Load icon for this skin (Auto per default take current skin)</param>
-        public static Texture2D LoadIcon(string path, string name, string extention = ".png", bool forceLowRes = false)
+        public static Texture2D LoadIcon(string path, string name, string extention = ".png", Skin skin = Skin.Auto)
         {
             if (String.IsNullOrEmpty(path) || String.IsNullOrEmpty(name))
                 return null;
 
             string prefix = "";
 
-            var skin = currentSkin;
+            if (skin == Skin.Auto)
+                skin = currentSkin;
+
             if (skin == Skin.Professional)
                 prefix = "d_";
             
             Texture2D icon = null;
             float pixelsPerPoint = GetGUIStatePixelsPerPoint();
-            if (pixelsPerPoint > 1.0f && !forceLowRes)
+            if (pixelsPerPoint > 1.0f)
             {
                 icon = EditorGUIUtility.Load(String.Format("{0}/{1}{2}@2x{3}", path, prefix, name, extention)) as Texture2D;
                 if (icon == null && !string.IsNullOrEmpty(prefix))

@@ -11,7 +11,6 @@ using UnityEngine.Rendering;
 using UnityEditor.Experimental.GraphView;
 using UnityEditor.Rendering;
 using UnityEditor.ShaderGraph.Drawing.Colors;
-using UnityEditor.ShaderGraph.Internal;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using Node = UnityEditor.Experimental.GraphView.Node;
@@ -75,15 +74,13 @@ namespace UnityEditor.ShaderGraph.Drawing
             if (m_ControlItems.childCount > 0)
                 contents.Add(controlsContainer);
 
-            // Node Base class toggles the 'expanded' variable already, this is on top of that call
-            m_CollapseButton.RegisterCallback<MouseUpEvent>(SetNodeExpandedStateOnSelection);
-
             if (node.hasPreview)
             {
                 // Add actual preview which floats on top of the node
                 m_PreviewContainer = new VisualElement
                 {
                     name = "previewContainer",
+                    cacheAsBitmap = true,
                     style = { overflow = Overflow.Hidden },
                     pickingMode = PickingMode.Ignore
                 };
@@ -100,7 +97,7 @@ namespace UnityEditor.ShaderGraph.Drawing
                     collapsePreviewButton.AddManipulator(new Clickable(() =>
                         {
                             node.owner.owner.RegisterCompleteObjectUndo("Collapse Preview");
-                            SetPreviewExpandedStateOnSelection(false);
+                            UpdatePreviewExpandedState(false);
                         }));
                     m_PreviewImage.Add(collapsePreviewButton);
                 }
@@ -124,19 +121,20 @@ namespace UnityEditor.ShaderGraph.Drawing
                     expandPreviewButton.AddManipulator(new Clickable(() =>
                         {
                             node.owner.owner.RegisterCompleteObjectUndo("Expand Preview");
-                            SetPreviewExpandedStateOnSelection(true);
+                            UpdatePreviewExpandedState(true);
                         }));
                     m_PreviewFiller.Add(expandPreviewButton);
                 }
                 contents.Add(m_PreviewFiller);
 
-                SetPreviewExpandedStateOnSelection(node.previewExpanded);
+                UpdatePreviewExpandedState(node.previewExpanded);
             }
 
             // Add port input container, which acts as a pixel cache for all port inputs
             m_PortInputContainer = new VisualElement
             {
                 name = "portInputContainer",
+                cacheAsBitmap = true,
                 style = { overflow = Overflow.Hidden },
                 pickingMode = PickingMode.Ignore
             };
@@ -184,7 +182,7 @@ namespace UnityEditor.ShaderGraph.Drawing
             var nodeTypeSettings = node as IHasSettings;
             if (nodeTypeSettings != null)
                 m_Settings.Add(nodeTypeSettings.CreateSettingsElement());
-
+            
             // Add manipulators
             m_SettingsButton.AddManipulator(new Clickable(() =>
                 {
@@ -199,10 +197,6 @@ namespace UnityEditor.ShaderGraph.Drawing
                 m_ButtonContainer.Add(m_CollapseButton);
                 m_TitleContainer.Add(m_ButtonContainer);
             }
-
-            // Register OnMouseHover callbacks for node highlighting
-            RegisterCallback<MouseEnterEvent>(OnMouseHover);
-            RegisterCallback<MouseLeaveEvent>(OnMouseHover);
         }
 
         public void AttachMessage(string errString, ShaderCompilerMessageSeverity severity)
@@ -240,18 +234,18 @@ namespace UnityEditor.ShaderGraph.Drawing
         static readonly StyleColor noColor = new StyleColor(StyleKeyword.Null);
         public void SetColor(Color color)
         {
-            m_TitleContainer.style.borderColor = color;//.borderBottomColor = color;
+            m_TitleContainer.style.borderColor = color;
         }
-
+        
         public void ResetColor()
         {
-            m_TitleContainer.style.borderColor = noColor;//.borderBottomColor = noColor;
+            m_TitleContainer.style.borderColor = noColor;
         }
 
 
         public Color GetColor()
         {
-            return m_TitleContainer.resolvedStyle.borderColor;//.borderBottomColor;
+            return m_TitleContainer.resolvedStyle.borderColor;
         }
 
         void OnGeometryChanged(GeometryChangedEvent evt)
@@ -381,7 +375,7 @@ namespace UnityEditor.ShaderGraph.Drawing
                         {
                             if (evt.newValue.Equals(node.precision))
                                 return;
-
+                            
                             var editorView = GetFirstAncestorOfType<GraphEditorView>();
                             var nodeList = m_GraphView.Query<MaterialNodeView>().ToList();
 
@@ -416,6 +410,7 @@ namespace UnityEditor.ShaderGraph.Drawing
             m_NodeSettingsView.Add(m_Settings);
         }
 
+
         void UpdateSettingsExpandedState()
         {
             m_ShowSettings = !m_ShowSettings;
@@ -423,7 +418,9 @@ namespace UnityEditor.ShaderGraph.Drawing
             {
                 m_NodeSettingsView.Add(m_Settings);
                 m_NodeSettingsView.visible = true;
-                SetSelfSelected();
+                m_GraphView.ClearSelection();
+                m_GraphView.AddToSelection(this);
+
                 m_SettingsButton.AddToClassList("clicked");
                 RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
                 OnGeometryChanged(null);
@@ -431,54 +428,11 @@ namespace UnityEditor.ShaderGraph.Drawing
             else
             {
                 m_Settings.RemoveFromHierarchy();
-                SetSelfSelected();
+
                 m_NodeSettingsView.visible = false;
                 m_SettingsButton.RemoveFromClassList("clicked");
                 UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             }
-        }
-
-
-        private void SetSelfSelected()
-        {
-            m_GraphView.ClearSelection();
-            m_GraphView.AddToSelection(this);
-        }
-
-        void SetNodeExpandedStateOnSelection(MouseUpEvent evt)
-        {
-            if (!selected)
-                SetSelfSelected();
-            else
-            {
-                if (m_GraphView is MaterialGraphView)
-                {
-                    var matGraphView = m_GraphView as MaterialGraphView;
-                    matGraphView.SetNodeExpandedOnSelection(expanded);
-                }
-            }
-        }
-
-        void SetPreviewExpandedStateOnSelection(bool state)
-        {
-            if (!selected)
-            {
-                SetSelfSelected();
-                UpdatePreviewExpandedState(state);
-            }
-            else
-            {
-                if(m_GraphView is MaterialGraphView)
-                {
-                    var matGraphView = m_GraphView as MaterialGraphView;
-                    matGraphView.SetPreviewExpandedOnSelection(state);
-                }
-            }
-        }
-
-        public bool CanToggleExpanded()
-        {
-            return m_CollapseButton.enabledInHierarchy;
         }
 
         void UpdatePreviewExpandedState(bool expanded)
@@ -510,8 +464,8 @@ namespace UnityEditor.ShaderGraph.Drawing
 
         void UpdateTitle()
         {
-            if (node is SubGraphNode subGraphNode && subGraphNode.asset != null)
-                title = subGraphNode.asset.name;
+            if (node is SubGraphNode subGraphNode && subGraphNode.subGraphData != null)
+                title = subGraphNode.subGraphAsset.name;
             else
                 title = node.name;
         }
@@ -631,9 +585,8 @@ namespace UnityEditor.ShaderGraph.Drawing
                 {
                     portInputView = new PortInputView(port.slot) { style = { position = Position.Absolute } };
                     m_PortInputContainer.Add(portInputView);
-                    SetPortInputPosition(port, portInputView);
                 }
-
+                
                 port.RegisterCallback<GeometryChangedEvent>(UpdatePortInput);
             }
         }
@@ -641,16 +594,8 @@ namespace UnityEditor.ShaderGraph.Drawing
         void UpdatePortInput(GeometryChangedEvent evt)
         {
             var port = (ShaderPort)evt.target;
-            var inputViews = m_PortInputContainer.Children().OfType<PortInputView>().Where(x => Equals(x.slot, port.slot));
-            
-            // Ensure PortInputViews are initialized correctly
-            // Dynamic port lists require one update to validate before init
-            if(inputViews.Count() != 0)
-            {
-                var inputView = inputViews.First();
-                SetPortInputPosition(port, inputView);
-            }
-            
+            var inputView = m_PortInputContainer.Children().OfType<PortInputView>().First(x => Equals(x.slot, port.slot));
+            SetPortInputPosition(port, inputView);
             port.UnregisterCallback<GeometryChangedEvent>(UpdatePortInput);
         }
 
@@ -702,35 +647,6 @@ namespace UnityEditor.ShaderGraph.Drawing
             {
                 previewNode.SetDimensions(updatedWidth, updatedHeight);
                 UpdateSize();
-            }
-        }
-
-        void OnMouseHover(EventBase evt)
-        {
-            var graphView = GetFirstAncestorOfType<GraphEditorView>();
-            if (graphView == null)
-                return;
-
-            var blackboardProvider = graphView.blackboardProvider;
-            if (blackboardProvider == null)
-                return;
-
-            // Keyword nodes should be highlighted when Blackboard entry is hovered
-            // TODO: Move to new NodeView type when keyword node has unique style
-            if(node is KeywordNode keywordNode)
-            {
-                var keywordRow = blackboardProvider.GetBlackboardRow(keywordNode.keywordGuid);
-                if (keywordRow != null)
-                {
-                    if (evt.eventTypeId == MouseEnterEvent.TypeId())
-                    {
-                        keywordRow.AddToClassList("hovered");
-                    }
-                    else
-                    {
-                        keywordRow.RemoveFromClassList("hovered");
-                    }
-                }
             }
         }
 

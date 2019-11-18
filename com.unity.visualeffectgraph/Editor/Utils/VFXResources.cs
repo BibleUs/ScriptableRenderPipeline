@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.VFX
 {
-    class VFXResources : ScriptableObject
+    public class VFXResources : ScriptableObject
     {
         public static VFXResources defaultResources
         {

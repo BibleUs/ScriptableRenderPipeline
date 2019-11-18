@@ -1,7 +1,7 @@
 using System;
 using UnityEngine.Serialization;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     public partial class HDAdditionalCameraData : IVersionable<HDAdditionalCameraData.Version>
     {
@@ -12,15 +12,13 @@ namespace UnityEngine.Rendering.HighDefinition
             SeparatePassThrough,
             UpgradingFrameSettingsToStruct,
             AddAfterPostProcessFrameSetting,
-            AddFrameSettingSpecularLighting, // Not used anymore
-            AddReflectionSettings,
-            AddCustomPostprocessAndCustomPass,
+            AddFrameSettingSpecularLighting
         }
 
         [SerializeField, FormerlySerializedAs("version")]
         Version m_Version;
 
-        static readonly MigrationDescription<Version, HDAdditionalCameraData> k_Migration = MigrationDescription.New(
+        protected static readonly MigrationDescription<Version, HDAdditionalCameraData> k_Migration = MigrationDescription.New(
             MigrationStep.New(Version.SeparatePassThrough, (HDAdditionalCameraData data) =>
             {
 #pragma warning disable 618 // Type or member is obsolete
@@ -52,13 +50,9 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 FrameSettings.MigrateToAfterPostprocess(ref data.renderingPathCustomFrameSettings);
             }),
-            MigrationStep.New(Version.AddReflectionSettings, (HDAdditionalCameraData data) =>
-                FrameSettings.MigrateToDefaultReflectionSettings(ref data.renderingPathCustomFrameSettings)
-            ),
-            MigrationStep.New(Version.AddCustomPostprocessAndCustomPass, (HDAdditionalCameraData data) =>
-            {
-                FrameSettings.MigrateToCustomPostprocessAndCustomPass(ref data.renderingPathCustomFrameSettings);
-            })
+            MigrationStep.New(Version.AddFrameSettingSpecularLighting, (HDAdditionalCameraData data) =>
+                FrameSettings.MigrateToSpecularLighting(ref data.renderingPathCustomFrameSettings)
+            )
         );
 
         Version IVersionable<Version>.version { get => m_Version; set => m_Version = value; }

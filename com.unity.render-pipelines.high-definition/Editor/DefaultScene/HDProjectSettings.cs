@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEditorInternal;
 using System.IO;
+using UnityEngine.Rendering;
 
-namespace UnityEditor.Rendering.HighDefinition
+namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
     //As ScriptableSingleton is not usable due to internal FilePathAttribute,
     //copying mechanism here
@@ -24,17 +25,9 @@ namespace UnityEditor.Rendering.HighDefinition
         [SerializeField]
         GameObject m_DefaultScenePrefabSaved;
         [SerializeField]
-        GameObject m_DefaultDXRScenePrefabSaved;
-        [SerializeField]
         string m_ProjectSettingFolderPath = "HDRPDefaultResources";
         [SerializeField]
-        bool m_WizardPopupAtStart = false;
-        [SerializeField]
-        int m_WizardActiveTab = 0;
-        [SerializeField]
-        string m_PackageVersionForMaterials = k_PackageFirstTimeVersionForMaterials;
-
-        internal const string k_PackageFirstTimeVersionForMaterials = "NeverSaved";
+        bool m_PopupAtStart = false;
 
         public static GameObject defaultScenePrefab
         {
@@ -42,16 +35,6 @@ namespace UnityEditor.Rendering.HighDefinition
             set
             {
                 instance.m_DefaultScenePrefabSaved = value;
-                Save();
-            }
-        }
-
-        public static GameObject defaultDXRScenePrefab
-        {
-            get => instance.m_DefaultDXRScenePrefabSaved;
-            set
-            {
-                instance.m_DefaultDXRScenePrefabSaved = value;
                 Save();
             }
         }
@@ -66,32 +49,12 @@ namespace UnityEditor.Rendering.HighDefinition
             }
         }
 
-        internal static int wizardActiveTab
+        public static bool hasStartPopup
         {
-            get => instance.m_WizardActiveTab;
+            get => instance.m_PopupAtStart;
             set
             {
-                instance.m_WizardActiveTab = value;
-                Save();
-            }
-        }
-
-        public static bool wizardIsStartPopup
-        {
-            get => instance.m_WizardPopupAtStart;
-            set
-            {
-                instance.m_WizardPopupAtStart = value;
-                Save();
-            }
-        }
-
-        public static string packageVersionForMaterialUpgrade
-        {
-            get => instance.m_PackageVersionForMaterials;
-            set
-            {
-                instance.m_PackageVersionForMaterials = value;
+                instance.m_PopupAtStart = value;
                 Save();
             }
         }
@@ -103,7 +66,7 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             s_Instance = this;
         }
-
+        
         static HDProjectSettings CreateOrLoad()
         {
             //try load

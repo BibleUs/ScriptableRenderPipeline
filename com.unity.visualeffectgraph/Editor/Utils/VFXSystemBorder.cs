@@ -71,11 +71,12 @@ namespace UnityEditor.VFX.UI
         {
             RecreateResources();
 
-            var tpl = VFXView.LoadUXML("VFXSystemBorder");
+            var tpl = Resources.Load<VisualTreeAsset>("uxml/VFXSystemBorder");
             tpl.CloneTree(this);
 
             this.AddStyleSheetPath("VFXSystemBorder");
 
+            this.cacheAsBitmap = false;
             this.style.overflow = Overflow.Visible;
 
             m_Title = this.Query<Label>("title");
@@ -348,8 +349,8 @@ namespace UnityEditor.VFX.UI
                 s_Mesh.uv2 = uvsDistance;
                 s_Mesh.SetIndices(indices, MeshTopology.Quads, 0);
             }
-            if( m_Mat == null)
-                m_Mat = new Material(Shader.Find("Hidden/VFX/GradientDashedBorder"));
+
+            m_Mat = new Material(Shader.Find("Hidden/VFX/GradientDashedBorder"));
         }
 
         void IDisposable.Dispose()

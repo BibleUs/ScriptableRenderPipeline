@@ -4,7 +4,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine.Experimental.VFX;
-using UnityEditor.VFX;
+using UnityEditor.Experimental.VFX;
 using System;
 
 namespace UnityEditor.VFX.UI

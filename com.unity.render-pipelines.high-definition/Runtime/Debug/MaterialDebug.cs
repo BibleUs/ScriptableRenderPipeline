@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System;
-using UnityEngine.Rendering.HighDefinition.Attributes;
+using UnityEngine.Experimental.Rendering.HDPipeline.Attributes;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     namespace Attributes
     {
@@ -386,7 +386,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 isDebugViewMaterialInit = true;
             }
         }
-
+        
         //Validator Settings
         public Color materialValidateLowColor = new Color(1.0f, 0.0f, 0.0f);
         public Color materialValidateHighColor = new Color(0.0f, 0.0f, 1.0f);
@@ -456,7 +456,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
         public void DisableMaterialDebug()
         {
-            debugViewMaterialCommonValue = MaterialSharedProperty.None;
             m_DebugViewMaterial[0] = 1;
             m_DebugViewMaterial[1] = 0;
             m_DebugViewEngine = 0;
@@ -467,11 +466,8 @@ namespace UnityEngine.Rendering.HighDefinition
 
         public void SetDebugViewCommonMaterialProperty(MaterialSharedProperty value)
         {
-            if (value != 0)
-            {
-                DisableMaterialDebug();
-                materialEnumIndex = 0;
-            }
+            DisableMaterialDebug();
+            materialEnumIndex = 0;
             debugViewMaterial = value == MaterialSharedProperty.None ? null : s_MaterialPropertyMap[value];
         }
 
@@ -531,7 +527,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
             return enabled;
         }
-
+        
         public bool IsDebugDisplayEnabled()
         {
             return (m_DebugViewEngine != 0 || IsDebugViewMaterialEnabled() || m_DebugViewVarying != DebugViewVarying.None || m_DebugViewProperties != DebugViewProperties.None || IsDebugGBufferEnabled());

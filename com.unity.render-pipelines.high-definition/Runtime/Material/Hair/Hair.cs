@@ -1,8 +1,10 @@
-using UnityEngine.Rendering.HighDefinition.Attributes;
+using System;
+using UnityEngine.Experimental.Rendering.HDPipeline.Attributes;
+using UnityEngine.Rendering;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
-    partial class Hair : RenderPipelineMaterial
+    public partial class Hair : RenderPipelineMaterial
     {
         [GenerateHLSL(PackingRules.Exact)]
         public enum MaterialFeatureFlags
@@ -104,6 +106,8 @@ namespace UnityEngine.Rendering.HighDefinition
             // Anisotropic
             [SurfaceDataAttributes("", true)]
             public Vector3 hairStrandDirectionWS;
+            public float roughnessT;
+            public float roughnessB;
             public float anisotropy;
 
             // Kajiya kay
@@ -122,7 +126,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         public Hair() {}
 
-        public override void Build(HDRenderPipelineAsset hdAsset, RenderPipelineResources defaultResources)
+        public override void Build(HDRenderPipelineAsset hdAsset)
         {
             PreIntegratedFGD.instance.Build(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             LTCAreaLight.instance.Build();

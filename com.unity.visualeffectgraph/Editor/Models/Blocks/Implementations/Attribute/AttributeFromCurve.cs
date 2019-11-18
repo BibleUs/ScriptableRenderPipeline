@@ -64,25 +64,25 @@ namespace UnityEditor.VFX.Block
             ColorAndAlpha = Color | Alpha,
         }
 
-        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), StringProvider(typeof(ReadWritableAttributeProvider))]
+        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), StringProvider(typeof(ReadWritableAttributeProvider)), Tooltip("Target Attribute")]
         public string attribute = VFXAttribute.AllIncludingVariadicWritable.First();
 
-        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), Tooltip("Specifies what operation to perform on the chosen attribute. The value derived from this block can overwrite, add to, multiply with, or blend with the existing attribute value.")]
+        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector)]
         public AttributeCompositionMode Composition = AttributeCompositionMode.Overwrite;
 
-        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), Tooltip("Specifies what operation to perform on the alpha value. The value derived from this block can overwrite, add to, multiply with, or blend with the existing alpha value.")]
+        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector)]
         public AttributeCompositionMode AlphaComposition = AttributeCompositionMode.Overwrite;
 
-        [VFXSetting, Tooltip("Specifies the method by which to sample the curve. This can be over the particle’s lifetime, its speed, randomly, or through a user-specified value.")]
+        [VFXSetting, Tooltip("How to sample the curve")]
         public CurveSampleMode SampleMode = CurveSampleMode.OverLife;
 
-        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), Tooltip("Specifies whether the block operates per component or uniformly across all components of the chosen attribute.")]
+        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector)]
         public ComputeMode Mode = ComputeMode.PerComponent;
 
-        [VFXSetting, Tooltip("Specifies whether the color is applied to RGB, alpha, or both.")]
+        [VFXSetting, Tooltip("Select whether the color is applied to RGB, alpha, or both")]
         public ColorApplicationMode ColorMode = ColorApplicationMode.ColorAndAlpha;
 
-        [VFXSetting, Tooltip("Specifies which channels to use in this block. This is useful for only affecting the relevant data if not all channels are used.")]
+        [VFXSetting]
         public VariadicChannelOptions channels = VariadicChannelOptions.XYZ;
         private static readonly char[] channelNames = new char[] { 'x', 'y', 'z' };
 
@@ -94,9 +94,9 @@ namespace UnityEditor.VFX.Block
             {
                 case CurveSampleMode.OverLife: n += " over Life"; break;
                 case CurveSampleMode.BySpeed: n += " by Speed"; break;
-                case CurveSampleMode.Random: n += $" Random from {(attribute == VFXAttribute.Color.name ? "Gradient" : "Curve")}"; break;
-                case CurveSampleMode.RandomConstantPerParticle: n += $" Random from {(attribute == VFXAttribute.Color.name ? "Gradient" : "Curve")} (Constant per-particle)"; break;
-                case CurveSampleMode.Custom: n += " Custom"; break;
+                case CurveSampleMode.Random: n += " randomized"; break;
+                case CurveSampleMode.RandomConstantPerParticle: n += " randomized"; break;
+                case CurveSampleMode.Custom: n += " custom"; break;
                 default:
                     throw new NotImplementedException("Invalid CurveSampleMode");
             }
@@ -124,8 +124,8 @@ namespace UnityEditor.VFX.Block
             }
         }
 
-        public override VFXContextType compatibleContexts { get { return VFXContextType.InitAndUpdateAndOutput; } }
-        public override VFXDataType compatibleData { get { return VFXDataType.Particle; } }
+        public override VFXContextType compatibleContexts { get { return VFXContextType.kInitAndUpdateAndOutput; } }
+        public override VFXDataType compatibleData { get { return VFXDataType.kParticle; } }
 
         public override IEnumerable<VFXAttributeInfo> attributes
         {

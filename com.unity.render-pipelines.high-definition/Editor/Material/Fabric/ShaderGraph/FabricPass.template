@@ -27,11 +27,7 @@ Pass
     #pragma multi_compile_instancing
     #pragma instancing_options renderinglayer
 
-    $LodCrossFade: #pragma multi_compile _ LOD_FADE_CROSSFADE
-
-    #pragma shader_feature _SURFACE_TYPE_TRANSPARENT
-    #pragma shader_feature_local _DOUBLESIDED_ON
-    #pragma shader_feature_local _ _BLENDMODE_ALPHA _BLENDMODE_ADD _BLENDMODE_PRE_MULTIPLY
+    #pragma multi_compile _ LOD_FADE_CROSSFADE
 
     //-------------------------------------------------------------------------------------
     // Variant Definitions (active field translations to HDRP defines)
@@ -39,6 +35,11 @@ Pass
     $Material.CottonWool:               #define _MATERIAL_FEATURE_COTTON_WOOL 1
     $Material.Transmission:             #define _MATERIAL_FEATURE_TRANSMISSION 1
     $Material.SubsurfaceScattering:     #define _MATERIAL_FEATURE_SUBSURFACE_SCATTERING 1
+    $SurfaceType.Transparent:           #define _SURFACE_TYPE_TRANSPARENT 1
+    $BlendMode.Alpha:                   #define _BLENDMODE_ALPHA 1
+    $BlendMode.Add:                     #define _BLENDMODE_ADD 1
+    $BlendMode.Premultiply:             #define _BLENDMODE_PRE_MULTIPLY 1
+    $BlendMode.PreserveSpecular:        #define _BLENDMODE_PRESERVE_SPECULAR_LIGHTING 1
     $AlphaFog:                          #define _ENABLE_FOG_ON_TRANSPARENT 1
     $Occlusion:                         #define _OCCLUSION 1
     $SpecularOcclusionFromAO:           #define _SPECULAR_OCCLUSION_FROM_AO 1
@@ -48,10 +49,8 @@ Pass
     $Specular.AA:                       #define _ENABLE_GEOMETRIC_SPECULAR_AA 1
     $DisableDecals:                     #define _DISABLE_DECALS 1
     $DisableSSR:                        #define _DISABLE_SSR 1
-    $AddPrecomputedVelocity:          #define _ADD_PRECOMPUTED_VELOCITY
+    $DoubleSided:                       #define _DOUBLESIDED_ON 1
     $DepthOffset:                       #define _DEPTHOFFSET_ON 1
-    $BlendMode.PreserveSpecular:        #define _BLENDMODE_PRESERVE_SPECULAR_LIGHTING 1
-
     //-------------------------------------------------------------------------------------
     // End Variant Definitions
     //-------------------------------------------------------------------------------------
@@ -95,15 +94,9 @@ Pass
     $VaryingsMeshToPS.cullFace:             #define VARYINGS_NEED_CULLFACE
     $features.modifyMesh:                   #define HAVE_MESH_MODIFICATION
 
-// We need isFontFace when using double sided
-#if defined(_DOUBLESIDED_ON) && !defined(VARYINGS_NEED_CULLFACE)
-    #define VARYINGS_NEED_CULLFACE
-#endif
-
     //-------------------------------------------------------------------------------------
     // End Defines
     //-------------------------------------------------------------------------------------
-	$splice(DotsInstancedVars)
 
     #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 #ifdef DEBUG_DISPLAY
@@ -184,10 +177,6 @@ $include("SharedCode.template.hlsl")
         // setup defaults -- these are used if the graph doesn't output a value
         ZERO_INITIALIZE(SurfaceData, surfaceData);
 
-        // specularOcclusion need to be init ahead of decal to quiet the compiler that modify the SurfaceData struct
-        // however specularOcclusion can come from the graph, so need to be init here so it can be override.
-        surfaceData.specularOcclusion = 1.0;
-
         // copy across graph values, if defined
         $SurfaceDescription.Albedo:                     surfaceData.baseColor =                 surfaceDescription.Albedo;
         $SurfaceDescription.SpecularOcclusion:          surfaceData.specularOcclusion =         surfaceDescription.SpecularOcclusion;
@@ -198,7 +187,7 @@ $include("SharedCode.template.hlsl")
         $SurfaceDescription.SubsurfaceMask:             surfaceData.subsurfaceMask =            surfaceDescription.SubsurfaceMask;
         $SurfaceDescription.Thickness:                  surfaceData.thickness =                 surfaceDescription.Thickness;
         $SurfaceDescription.Anisotropy:                 surfaceData.anisotropy =                surfaceDescription.Anisotropy;
-
+        
         // These static material feature allow compile time optimization
         surfaceData.materialFeatures = 0;
 
@@ -223,11 +212,9 @@ $include("SharedCode.template.hlsl")
         surfaceData.baseColor *= (1.0 - Max3(surfaceData.specularColor.r, surfaceData.specularColor.g, surfaceData.specularColor.b));
 #endif
 
-#ifdef _DOUBLESIDED_ON
-    float3 doubleSidedConstants = _DoubleSidedConstants.xyz;
-#else
-    float3 doubleSidedConstants = float3(1.0, 1.0, 1.0);
-#endif
+        float3 doubleSidedConstants = float3(1.0, 1.0, 1.0);
+        $DoubleSided.Flip:   doubleSidedConstants = float3(-1.0, -1.0, -1.0);
+        $DoubleSided.Mirror: doubleSidedConstants = float3( 1.0,  1.0, -1.0);
 
         // tangent-space normal
         float3 normalTS = float3(0.0f, 0.0f, 1.0f);
@@ -236,23 +223,18 @@ $include("SharedCode.template.hlsl")
         // compute world space normal
         GetNormalWS(fragInputs, normalTS, surfaceData.normalWS, doubleSidedConstants);
 
-        surfaceData.geomNormalWS = fragInputs.tangentToWorld[2];
-        surfaceData.tangentWS = normalize(fragInputs.tangentToWorld[0].xyz);    // The tangent is not normalize in tangentToWorld for mikkt. TODO: Check if it expected that we normalize with Morten. Tag: SURFACE_GRADIENT
-        $Tangent: surfaceData.tangentWS = TransformTangentToWorld(surfaceDescription.Tangent, fragInputs.tangentToWorld);
-
-#if HAVE_DECALS
-        if (_EnableDecals)
-        {
-            // Both uses and modifies 'surfaceData.normalWS'.
-            DecalSurfaceData decalSurfaceData = GetDecalSurfaceData(posInput, surfaceDescription.Alpha);
-            ApplyDecalToSurfaceData(decalSurfaceData, surfaceData);
-        }
-#endif
-
         bentNormalWS = surfaceData.normalWS;
         $BentNormal: GetNormalWS(fragInputs, surfaceDescription.BentNormal, bentNormalWS, doubleSidedConstants);
 
+        surfaceData.geomNormalWS = fragInputs.worldToTangent[2];
+
+        surfaceData.tangentWS = normalize(fragInputs.worldToTangent[0].xyz);    // The tangent is not normalize in worldToTangent for mikkt. TODO: Check if it expected that we normalize with Morten. Tag: SURFACE_GRADIENT
+        $Tangent: surfaceData.tangentWS = TransformTangentToWorld(surfaceDescription.Tangent, fragInputs.worldToTangent);
         surfaceData.tangentWS = Orthonormalize(surfaceData.tangentWS, surfaceData.normalWS);
+
+        // By default we use the ambient occlusion with Tri-ace trick (apply outside) for specular occlusion.
+        // If user provide bent normal then we process a better term
+        surfaceData.specularOcclusion = 1.0;
 
 #if defined(_SPECULAR_OCCLUSION_CUSTOM)
         // Just use the value passed through via the slot (not active otherwise)
@@ -261,6 +243,16 @@ $include("SharedCode.template.hlsl")
         surfaceData.specularOcclusion = GetSpecularOcclusionFromBentAO(V, bentNormalWS, surfaceData.normalWS, surfaceData.ambientOcclusion, PerceptualSmoothnessToPerceptualRoughness(surfaceData.perceptualSmoothness));
 #elif defined(_AMBIENT_OCCLUSION) && defined(_SPECULAR_OCCLUSION_FROM_AO)
         surfaceData.specularOcclusion = GetSpecularOcclusionFromAmbientOcclusion(ClampNdotV(dot(surfaceData.normalWS, V)), surfaceData.ambientOcclusion, PerceptualSmoothnessToRoughness(surfaceData.perceptualSmoothness));
+#else
+        surfaceData.specularOcclusion = 1.0;
+#endif
+
+#if HAVE_DECALS
+        if (_EnableDecals)
+        {
+            DecalSurfaceData decalSurfaceData = GetDecalSurfaceData(posInput, surfaceDescription.Alpha);
+            ApplyDecalToSurfaceData(decalSurfaceData, surfaceData);
+        }
 #endif
 
 #ifdef DEBUG_DISPLAY
@@ -271,7 +263,7 @@ $include("SharedCode.template.hlsl")
 
         // We need to call ApplyDebugToSurfaceData after filling the surfarcedata and before filling builtinData
         // as it can modify attribute use for static lighting
-        ApplyDebugToSurfaceData(fragInputs.tangentToWorld, surfaceData);
+        ApplyDebugToSurfaceData(fragInputs.worldToTangent, surfaceData);
 #endif
     }
 
@@ -282,11 +274,9 @@ $include("SharedCode.template.hlsl")
         LODDitheringTransition(fadeMaskSeed, unity_LODFade.x);
 #endif
 
-#ifdef _DOUBLESIDED_ON
-    float3 doubleSidedConstants = _DoubleSidedConstants.xyz;
-#else
-    float3 doubleSidedConstants = float3(1.0, 1.0, 1.0);
-#endif
+        float3 doubleSidedConstants = float3(1.0, 1.0, 1.0);
+        $DoubleSided.Flip:   doubleSidedConstants = float3(-1.0, -1.0, -1.0);
+        $DoubleSided.Mirror: doubleSidedConstants = float3( 1.0,  1.0, -1.0);
 
         ApplyDoubleSidedFlipOrMirror(fragInputs, doubleSidedConstants);
 
@@ -303,13 +293,13 @@ $include("SharedCode.template.hlsl")
         BuildSurfaceData(fragInputs, surfaceDescription, V, posInput, surfaceData, bentNormalWS);
 
         // Builtin Data
-        // For back lighting we use the oposite vertex normal
-        InitBuiltinData(posInput, surfaceDescription.Alpha, bentNormalWS, -fragInputs.tangentToWorld[2], fragInputs.texCoord1, fragInputs.texCoord2, builtinData);
+        // For back lighting we use the oposite vertex normal 
+        InitBuiltinData(posInput, surfaceDescription.Alpha, bentNormalWS, -fragInputs.worldToTangent[2], fragInputs.texCoord1, fragInputs.texCoord2, builtinData);
 
         // override sampleBakedGI:
         $LightingGI: builtinData.bakeDiffuseLighting = surfaceDescription.BakedGI;
         $BackLightingGI: builtinData.backBakeDiffuseLighting = surfaceDescription.BakedBackGI;
-
+        
         $DepthOffset: builtinData.depthOffset = surfaceDescription.DepthOffset;
 
         $SurfaceDescription.Emission: builtinData.emissiveColor = surfaceDescription.Emission;

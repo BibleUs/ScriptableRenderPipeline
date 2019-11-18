@@ -5,7 +5,7 @@ using System;
 
 namespace UnityEditor.Experimental.VFX.Utility
 {
-    partial class PointCacheBakeTool : EditorWindow
+    public partial class PointCacheBakeTool : EditorWindow
     {
         public enum MeshBakeMode
         {

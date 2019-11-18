@@ -4,55 +4,7 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [7.1.5] - 2019-11-15
-
-### Added
-- Add rough version of ContextualMenuDispatcher to solve conflict amongst SRP.
-
-## [7.1.4] - 2019-11-13
-
-### Changed
-- Set depthSlice to -1 by default on SetRenderTarget() to clear all slices of Texture2DArray by default.
-
-## [7.1.3] - 2019-11-04
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.1.2] - 2019-09-19
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-### Changed
-- Restored usage of ENABLE_VR to fix compilation errors on some platforms.
-- Only call SetDirty on an object when actually modifying it in SRP updater utility
-
-### Fixed
-- Fixed compile errors for platforms with no VR support
-
-## [7.1.1] - 2019-09-05
-
-### Added
-- Add separated debug mode in LookDev.
-
-### Changed
-- Replaced usage of ENABLE_VR in XRGraphics.cs by a version define (ENABLE_VR_MODULE) based on the presence of the built-in VR module
-- `ResourceReloader` now works on non-public fields.
-- Removed `normalize` from `UnpackNormalRGB` to match `UnpackNormalAG`.
-- Fixed shadow routines compilation errors when "real" type is a typedef on "half".
-- Removed debug menu in non development build.
-
-## [7.0.1] - 2019-07-25
-
-### Fixed
-- Fixed a precision issue with the ACES tonemapper on mobile platforms.
-
-## [7.0.0] - 2019-07-17
-
-### Added
-- First experimental version of the LookDev. Works with all SRP. Only branched on HDRP at the moment.
-- LookDev out of experimental
+## [7.0.0-preview] - 2019-XX-XX
 
 ## [6.7.0-preview] - 2019-05-16
 

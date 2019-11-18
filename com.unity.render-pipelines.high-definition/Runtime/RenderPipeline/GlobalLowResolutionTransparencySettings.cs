@@ -1,6 +1,6 @@
 using System;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
 
     public enum LowResTransparentUpsample : byte
@@ -19,11 +19,11 @@ namespace UnityEngine.Rendering.HighDefinition
             checkerboardDepthBuffer = true,
             upsampleType = LowResTransparentUpsample.NearestDepth
         };
-
+        
         public bool enabled;
         public bool checkerboardDepthBuffer;
 
-
+        
         public LowResTransparentUpsample upsampleType;
     }
 }

@@ -8,12 +8,12 @@ namespace UnityEditor.VFX.Block
     [VFXInfo(category = "Force")]
     class Drag : VFXBlock
     {
-        [VFXSetting, Tooltip("When enabled, the particle size will affect the drag. Larger particles have a higher linear drag.")]
+        [VFXSetting]
         public bool UseParticleSize = false;
 
         public override string name { get { return "Linear Drag"; } }
-        public override VFXContextType compatibleContexts { get { return VFXContextType.Update; } }
-        public override VFXDataType compatibleData { get { return VFXDataType.Particle; } }
+        public override VFXContextType compatibleContexts { get { return VFXContextType.kUpdate; } }
+        public override VFXDataType compatibleData { get { return VFXDataType.kParticle; } }
 
         public override IEnumerable<VFXNamedExpression> parameters
         {
@@ -43,7 +43,7 @@ namespace UnityEditor.VFX.Block
 
         public class InputProperties
         {
-            [Tooltip("Sets the drag coefficient. Higher drag forces particles to slow down more.")]
+            [Tooltip("Drag coefficient of the particle")]
             public float dragCoefficient = 0.5f;
         }
 

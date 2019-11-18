@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Graphing;
-using UnityEditor.ShaderGraph.Internal;
 
 namespace UnityEditor.ShaderGraph
 {
-    [HasDependencies(typeof(MinimalSubGraphNode))]
     [Title("Utility", "Sub-graph")]
     class SubGraphNode : AbstractMaterialNode
         , IGeneratesBodyCode
@@ -26,25 +24,23 @@ namespace UnityEditor.ShaderGraph
         , IMayRequireCameraOpaqueTexture
         , IMayRequireDepthTexture
     {
-        [Serializable]
-        public class MinimalSubGraphNode : IHasDependencies
-        {
-            [SerializeField]
-            string m_SerializedSubGraph = string.Empty;
+        [SerializeField]
+        private string m_SerializedSubGraph = string.Empty;
 
-            public void GetSourceAssetDependencies(List<string> paths)
-            {
-                var assetReference = JsonUtility.FromJson<SubGraphAssetReference>(m_SerializedSubGraph);
-                var guid = assetReference?.subGraph?.guid;
-                if (guid != null)
-                {
-                    paths.Add(AssetDatabase.GUIDToAssetPath(guid));
-                }
-            }
-        }
+        [NonSerialized]
+        SubGraphAsset m_SubGraph;
+
+        [NonSerialized]
+        SubGraphData m_SubGraphData = default;
+
+        [SerializeField]
+        List<string> m_PropertyGuids = new List<string>();
+
+        [SerializeField]
+        List<int> m_PropertyIds = new List<int>();
 
         [Serializable]
-        class SubGraphHelper
+        private class SubGraphHelper
         {
             public SubGraphAsset subGraph;
         }
@@ -72,18 +68,6 @@ namespace UnityEditor.ShaderGraph
                 return $"fileID={fileID}, guid={guid}, type={type}";
             }
         }
-        
-        [SerializeField]
-        string m_SerializedSubGraph = string.Empty;
-
-        [NonSerialized]
-        SubGraphAsset m_SubGraph;
-
-        [SerializeField]
-        List<string> m_PropertyGuids = new List<string>();
-
-        [SerializeField]
-        List<int> m_PropertyIds = new List<int>();
 
         public string subGraphGuid
         {
@@ -98,6 +82,8 @@ namespace UnityEditor.ShaderGraph
         {
             if (m_SubGraph == null)
             {
+                m_SubGraphData = null;
+                
                 if (string.IsNullOrEmpty(m_SerializedSubGraph))
                 {
                     return;
@@ -112,11 +98,21 @@ namespace UnityEditor.ShaderGraph
                 }
                 
                 name = m_SubGraph.name;
-                concretePrecision = m_SubGraph.outputPrecision;
+                var index = SubGraphDatabase.instance.subGraphGuids.BinarySearch(graphGuid);
+                m_SubGraphData = index < 0 ? null : SubGraphDatabase.instance.subGraphs[index];
             }
         }
 
-        public SubGraphAsset asset
+        public SubGraphData subGraphData
+                {
+            get
+                    {
+                LoadSubGraph();
+                return m_SubGraphData;
+                    }
+                }
+
+        public SubGraphAsset subGraphAsset
         {
             get
             {
@@ -125,13 +121,14 @@ namespace UnityEditor.ShaderGraph
             }
             set
             {
-                if (asset == value)
+                if (subGraphAsset == value)
                     return;
 
                 var helper = new SubGraphHelper();
                 helper.subGraph = value;
                 m_SerializedSubGraph = EditorJsonUtility.ToJson(helper, true);
                 m_SubGraph = null;
+                m_SubGraphData = null;
                 UpdateSlots();
 
                 Dirty(ModificationScope.Topological);
@@ -140,14 +137,14 @@ namespace UnityEditor.ShaderGraph
 
         public override bool hasPreview
         {
-            get { return asset != null; }
+            get { return subGraphData != null; }
         }
 
         public override PreviewMode previewMode
         {
             get
             {
-                if (asset == null)
+                if (subGraphData == null)
                     return PreviewMode.Preview2D;
 
                 return PreviewMode.Preview3D;
@@ -169,16 +166,15 @@ namespace UnityEditor.ShaderGraph
             get { return false; }
         }
 
-        public void GenerateNodeCode(ShaderStringBuilder sb, GenerationMode generationMode)
+        public void GenerateNodeCode(ShaderStringBuilder sb, GraphContext graphContext, GenerationMode generationMode)
         {
-            if (asset == null || hasError)
+            if (subGraphData == null || hasError)
             {
                 var outputSlots = new List<MaterialSlot>();
                 GetOutputSlots(outputSlots);
-                var outputPrecision = asset != null ? asset.outputPrecision : ConcretePrecision.Float;
                 foreach (var slot in outputSlots)
                 {
-                    sb.AppendLine($"{slot.concreteValueType.ToShaderString(outputPrecision)} {GetVariableNameForSlot(slot.id)} = {slot.GetDefaultValue(GenerationMode.ForReals)};");
+                    sb.AppendLine($"{slot.concreteValueType.ToShaderString(subGraphData.outputPrecision)} {GetVariableNameForSlot(slot.id)} = {slot.GetDefaultValue(GenerationMode.ForReals)};");
                 }
                 
                 return;
@@ -186,79 +182,108 @@ namespace UnityEditor.ShaderGraph
 
             var inputVariableName = $"_{GetVariableNameForNode()}";
             
-            SubShaderGenerator.GenerateSurfaceInputTransferCode(sb, asset.requirements, asset.inputStructName, inputVariableName);
+            GraphUtil.GenerateSurfaceInputTransferCode(sb, subGraphData.requirements, subGraphData.inputStructName, inputVariableName);
 
-            foreach (var outSlot in asset.outputs)
-                sb.AppendLine("{0} {1};", outSlot.concreteValueType.ToShaderString(asset.outputPrecision), GetVariableNameForSlot(outSlot.id));
+            foreach (var outSlot in subGraphData.outputs)
+                sb.AppendLine("{0} {1};", outSlot.concreteValueType.ToShaderString(subGraphData.outputPrecision), GetVariableNameForSlot(outSlot.id));
 
             var arguments = new List<string>();
-            foreach (var prop in asset.inputs)
-            {               
-                prop.ValidateConcretePrecision(asset.graphPrecision);
+            foreach (var prop in subGraphData.inputs)
+            {
+                prop.SetConcretePrecision(subGraphData.graphPrecision);
                 var inSlotId = m_PropertyIds[m_PropertyGuids.IndexOf(prop.guid.ToString())];
 
-                switch(prop)
-                {
-                    case Texture2DShaderProperty texture2DProp:
-                        arguments.Add(string.Format("TEXTURE2D_ARGS({0}, sampler{0}), {0}_TexelSize", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
-                        break;
-                    case Texture2DArrayShaderProperty texture2DArrayProp:
-                        arguments.Add(string.Format("TEXTURE2D_ARRAY_ARGS({0}, sampler{0})", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
-                        break;
-                    case Texture3DShaderProperty texture3DProp:
-                        arguments.Add(string.Format("TEXTURE3D_ARGS({0}, sampler{0})", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
-                        break;
-                    case CubemapShaderProperty cubemapProp:
-                        arguments.Add(string.Format("TEXTURECUBE_ARGS({0}, sampler{0})", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
-                        break;
-                    default:
-                        arguments.Add(string.Format("{0}", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
-                        break;
-                }
+                if (prop is TextureShaderProperty)
+                    arguments.Add(string.Format("TEXTURE2D_ARGS({0}, sampler{0})", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
+                else if (prop is Texture2DArrayShaderProperty)
+                    arguments.Add(string.Format("TEXTURE2D_ARRAY_ARGS({0}, sampler{0})", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
+                else if (prop is Texture3DShaderProperty)
+                    arguments.Add(string.Format("TEXTURE3D_ARGS({0}, sampler{0})", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
+                else if (prop is CubemapShaderProperty)
+                    arguments.Add(string.Format("TEXTURECUBE_ARGS({0}, sampler{0})", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
+                else
+                    arguments.Add(string.Format("{0}", GetSlotValue(inSlotId, generationMode, prop.concretePrecision)));
             }
 
             // pass surface inputs through
             arguments.Add(inputVariableName);
 
-            foreach (var outSlot in asset.outputs)
+            foreach (var outSlot in subGraphData.outputs)
                 arguments.Add(GetVariableNameForSlot(outSlot.id));
 
-            sb.AppendLine("{0}({1});", asset.functionName, arguments.Aggregate((current, next) => string.Format("{0}, {1}", current, next)));
+            sb.AppendLine("{0}({1});", subGraphData.functionName, arguments.Aggregate((current, next) => string.Format("{0}, {1}", current, next)));
         }
 
         public void OnEnable()
         {
             UpdateSlots();
         }
-        
-        public void Reload(HashSet<string> changedFileDependencies)
-        {
-            if (asset == null || hasError)
-            {
-                return;
-            }
-            if (changedFileDependencies.Contains(asset.assetGuid) || asset.descendents.Any(changedFileDependencies.Contains))
-            {
-                m_SubGraph = null;
-                UpdateSlots();
-                owner.ClearErrorsForNode(this);
-                ValidateNode();
-                Dirty(ModificationScope.Graph);
-            }
-        }
 
         public virtual void UpdateSlots()
         {
             var validNames = new List<int>();
-            if (asset == null)
+            if (subGraphData == null)
             {
                 return;
             }
 
-            var props = asset.inputs;
+            var props = subGraphData.inputs;
             foreach (var prop in props)
             {
-                SlotValueType valueType = prop.concreteShaderValueType.ToSlotValueType();
+                var propType = prop.propertyType;
+                SlotValueType slotType;
+
+                switch (propType)
+                {
+                    case PropertyType.Color:
+                        slotType = SlotValueType.Vector4;
+                        break;
+                    case PropertyType.Texture2D:
+                        slotType = SlotValueType.Texture2D;
+                        break;
+                    case PropertyType.Texture2DArray:
+                        slotType = SlotValueType.Texture2DArray;
+                        break;
+                    case PropertyType.Texture3D:
+                        slotType = SlotValueType.Texture3D;
+                        break;
+                    case PropertyType.Cubemap:
+                        slotType = SlotValueType.Cubemap;
+                        break;
+                    case PropertyType.Gradient:
+                        slotType = SlotValueType.Gradient;
+                        break;
+                    case PropertyType.Vector1:
+                        slotType = SlotValueType.Vector1;
+                        break;
+                    case PropertyType.Vector2:
+                        slotType = SlotValueType.Vector2;
+                        break;
+                    case PropertyType.Vector3:
+                        slotType = SlotValueType.Vector3;
+                        break;
+                    case PropertyType.Vector4:
+                        slotType = SlotValueType.Vector4;
+                        break;
+                    case PropertyType.Boolean:
+                        slotType = SlotValueType.Boolean;
+                        break;
+                    case PropertyType.Matrix2:
+                        slotType = SlotValueType.Matrix2;
+                        break;
+                    case PropertyType.Matrix3:
+                        slotType = SlotValueType.Matrix3;
+                        break;
+                    case PropertyType.Matrix4:
+                        slotType = SlotValueType.Matrix4;
+                        break;
+                    case PropertyType.SamplerState:
+                        slotType = SlotValueType.SamplerState;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
                 var propertyString = prop.guid.ToString();
                 var propertyIndex = m_PropertyGuids.IndexOf(propertyString);
                 if (propertyIndex < 0)
@@ -268,145 +293,73 @@ namespace UnityEditor.ShaderGraph
                     m_PropertyIds.Add(prop.guid.GetHashCode());
                 }
                 var id = m_PropertyIds[propertyIndex];
-                MaterialSlot slot = MaterialSlot.CreateMaterialSlot(valueType, id, prop.displayName, prop.referenceName, SlotType.Input, Vector4.zero, ShaderStageCapability.All);
+                MaterialSlot slot = MaterialSlot.CreateMaterialSlot(slotType, id, prop.displayName, prop.referenceName, SlotType.Input, prop.defaultValue, ShaderStageCapability.All);
                 
-                // Copy defaults
-                switch(prop.concreteShaderValueType)
+                // copy default for texture for niceness
+                if (slotType == SlotValueType.Texture2D && propType == PropertyType.Texture2D)
                 {
-                    case ConcreteSlotValueType.Matrix4:
-                        {
-                            var tSlot = slot as Matrix4MaterialSlot;
-                            var tProp = prop as Matrix4ShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.value = tProp.value;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Matrix3:
-                        {
-                            var tSlot = slot as Matrix3MaterialSlot;
-                            var tProp = prop as Matrix3ShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.value = tProp.value;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Matrix2:
-                        {
-                            var tSlot = slot as Matrix2MaterialSlot;
-                            var tProp = prop as Matrix2ShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.value = tProp.value;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Texture2D:
-                        {
-                            var tSlot = slot as Texture2DInputMaterialSlot;
-                            var tProp = prop as Texture2DShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.texture = tProp.value.texture;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Texture2DArray:
-                        {
-                            var tSlot = slot as Texture2DArrayInputMaterialSlot;
-                            var tProp = prop as Texture2DArrayShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.textureArray = tProp.value.textureArray;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Texture3D:
-                        {
-                            var tSlot = slot as Texture3DInputMaterialSlot;
-                            var tProp = prop as Texture3DShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.texture = tProp.value.texture;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Cubemap:
-                        {
-                            var tSlot = slot as CubemapInputMaterialSlot;
-                            var tProp = prop as CubemapShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.cubemap = tProp.value.cubemap;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Gradient:
-                        {
-                            var tSlot = slot as GradientInputMaterialSlot;
-                            var tProp = prop as GradientShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.value = tProp.value;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Vector4:
-                        {
-                            var tSlot = slot as Vector4MaterialSlot;
-                            var vector4Prop = prop as Vector4ShaderProperty;
-                            var colorProp = prop as ColorShaderProperty;
-                            if (tSlot != null && vector4Prop != null)
-                                tSlot.value = vector4Prop.value;
-                            else if (tSlot != null && colorProp != null)
-                                tSlot.value = colorProp.value;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Vector3:
-                        {
-                            var tSlot = slot as Vector3MaterialSlot;
-                            var tProp = prop as Vector3ShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.value = tProp.value;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Vector2:
-                        {
-                            var tSlot = slot as Vector2MaterialSlot;
-                            var tProp = prop as Vector2ShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.value = tProp.value;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Vector1:
-                        {
-                            var tSlot = slot as Vector1MaterialSlot;
-                            var tProp = prop as Vector1ShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.value = tProp.value;
-                        }
-                        break;
-                    case ConcreteSlotValueType.Boolean:
-                        {
-                            var tSlot = slot as BooleanMaterialSlot;
-                            var tProp = prop as BooleanShaderProperty;
-                            if (tSlot != null && tProp != null)
-                                tSlot.value = tProp.value;
-                        }
-                        break;
+                    var tSlot = slot as Texture2DInputMaterialSlot;
+                    var tProp = prop as TextureShaderProperty;
+                    if (tSlot != null && tProp != null)
+                        tSlot.texture = tProp.value.texture;
                 }
-                
+                // copy default for texture array for niceness
+                else if (slotType == SlotValueType.Texture2DArray && propType == PropertyType.Texture2DArray)
+                {
+                    var tSlot = slot as Texture2DArrayInputMaterialSlot;
+                    var tProp = prop as Texture2DArrayShaderProperty;
+                    if (tSlot != null && tProp != null)
+                        tSlot.textureArray = tProp.value.textureArray;
+                }
+                // copy default for texture 3d for niceness
+                else if (slotType == SlotValueType.Texture3D && propType == PropertyType.Texture3D)
+                {
+                    var tSlot = slot as Texture3DInputMaterialSlot;
+                    var tProp = prop as Texture3DShaderProperty;
+                    if (tSlot != null && tProp != null)
+                        tSlot.texture = tProp.value.texture;
+                }
+                // copy default for cubemap for niceness
+                else if (slotType == SlotValueType.Cubemap && propType == PropertyType.Cubemap)
+                {
+                    var tSlot = slot as CubemapInputMaterialSlot;
+                    var tProp = prop as CubemapShaderProperty;
+                    if (tSlot != null && tProp != null)
+                        tSlot.cubemap = tProp.value.cubemap;
+                }
+                // copy default for gradient for niceness
+                else if (slotType == SlotValueType.Gradient && propType == PropertyType.Gradient)
+                {
+                    var tSlot = slot as GradientInputMaterialSlot;
+                    var tProp = prop as GradientShaderProperty;
+                    if (tSlot != null && tProp != null)
+                        tSlot.value = tProp.value;
+                }
                 AddSlot(slot);
                 validNames.Add(id);
             }
 
-            var outputStage = asset.effectiveShaderStage;
+            var outputStage = subGraphData.effectiveShaderStage;
 
-            foreach (var slot in asset.outputs)
-            {
-                AddSlot(MaterialSlot.CreateMaterialSlot(slot.valueType, slot.id, slot.RawDisplayName(), 
-                    slot.shaderOutputName, SlotType.Output, Vector4.zero, outputStage));
-                validNames.Add(slot.id);
-            }
+            foreach (var slot in subGraphData.outputs)
+                {
+                    AddSlot(MaterialSlot.CreateMaterialSlot(slot.valueType, slot.id, slot.RawDisplayName(), 
+                        slot.shaderOutputName, SlotType.Output, Vector4.zero, outputStage));
+                    validNames.Add(slot.id);
+                }
 
             RemoveSlotsNameNotMatching(validNames, true);
         }
 
         void ValidateShaderStage()
         {
-            if (asset != null)
-            {
-                List<MaterialSlot> slots = new List<MaterialSlot>();
-                GetInputSlots(slots);
-                GetOutputSlots(slots);
+            if (subGraphData != null)
+        {
+            List<MaterialSlot> slots = new List<MaterialSlot>();
+            GetInputSlots(slots);
+            GetOutputSlots(slots);
 
-                var outputStage = asset.effectiveShaderStage;
+                var outputStage = subGraphData.effectiveShaderStage;
                 foreach (MaterialSlot slot in slots)
                     slot.stageCapability = outputStage;
             }
@@ -416,7 +369,7 @@ namespace UnityEditor.ShaderGraph
         {
             base.ValidateNode();
             
-            if (asset == null)
+            if (subGraphData == null)
             {
                 hasError = true;
                 var assetGuid = subGraphGuid;
@@ -433,165 +386,172 @@ namespace UnityEditor.ShaderGraph
                 return;
             }
             
-            if (asset.isRecursive || owner.isSubGraph && (asset.descendents.Contains(owner.assetGuid) || asset.assetGuid == owner.assetGuid))
+            if (subGraphData.isRecursive || owner.isSubGraph && (subGraphData.descendents.Contains(owner.assetGuid) || subGraphData.assetGuid == owner.assetGuid))
             {
                 hasError = true;
                 owner.AddValidationError(tempId, $"Detected a recursion in Sub Graph asset at \"{AssetDatabase.GUIDToAssetPath(subGraphGuid)}\" with GUID {subGraphGuid}.");
             }
-            else if (!asset.isValid)
+            else if (!subGraphData.isValid)
             {
                 hasError = true;
                 owner.AddValidationError(tempId, $"Invalid Sub Graph asset at \"{AssetDatabase.GUIDToAssetPath(subGraphGuid)}\" with GUID {subGraphGuid}.");
             }
 
             ValidateShaderStage();
+
+            concretePrecision = subGraphData.outputPrecision;
         }
 
         public override void CollectShaderProperties(PropertyCollector visitor, GenerationMode generationMode)
         {
             base.CollectShaderProperties(visitor, generationMode);
 
-            if (asset == null)
+            if (subGraphData == null)
                 return;
 
-            foreach (var property in asset.nodeProperties)
+            foreach (var property in subGraphData.nodeProperties)
             {
                 visitor.AddShaderProperty(property);
             }
-        }
-
-        public void CollectShaderKeywords(KeywordCollector keywords, GenerationMode generationMode)
-        {
-            if (asset == null)
-                return;
-
-            foreach (var keyword in asset.keywords)
-            {
-                keywords.AddShaderKeyword(keyword as ShaderKeyword);
-            }    
         }
 
         public override void CollectPreviewMaterialProperties(List<PreviewProperty> properties)
         {
             base.CollectPreviewMaterialProperties(properties);
             
-            if (asset == null)
+            if (subGraphData == null)
                 return;
 
-            foreach (var property in asset.nodeProperties)
+            foreach (var property in subGraphData.nodeProperties)
             {
                 properties.Add(property.GetPreviewMaterialProperty());
         }
         }
 
-        public virtual void GenerateNodeFunction(FunctionRegistry registry, GenerationMode generationMode)
+        public virtual void GenerateNodeFunction(FunctionRegistry registry, GraphContext graphContext, GenerationMode generationMode)
         {
-            if (asset == null || hasError)
+            if (subGraphData == null || hasError)
                 return;
+
+            var database = SubGraphDatabase.instance;
             
-            foreach (var function in asset.functions)
+            foreach (var functionName in subGraphData.functionNames)
             {
-                registry.ProvideFunction(function.key, s =>
+                registry.ProvideFunction(functionName, s =>
                 {
-                    s.AppendLines(function.value);
+                    var functionSource = database.functionSources[database.functionNames.BinarySearch(functionName)];
+                    s.AppendLines(functionSource);
                 });
             }
         }
 
         public NeededCoordinateSpace RequiresNormal(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return NeededCoordinateSpace.None;
 
-            return asset.requirements.requiresNormal;
+            return subGraphData.requirements.requiresNormal;
         }
 
         public bool RequiresMeshUV(UVChannel channel, ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return false;
 
-            return asset.requirements.requiresMeshUVs.Contains(channel);
+            return subGraphData.requirements.requiresMeshUVs.Contains(channel);
         }
 
         public bool RequiresScreenPosition(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return false;
 
-            return asset.requirements.requiresScreenPosition;
+            return subGraphData.requirements.requiresScreenPosition;
         }
 
         public NeededCoordinateSpace RequiresViewDirection(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return NeededCoordinateSpace.None;
 
-            return asset.requirements.requiresViewDir;
+            return subGraphData.requirements.requiresViewDir;
         }
 
         public NeededCoordinateSpace RequiresPosition(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return NeededCoordinateSpace.None;
 
-            return asset.requirements.requiresPosition;
+            return subGraphData.requirements.requiresPosition;
         }
 
         public NeededCoordinateSpace RequiresTangent(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return NeededCoordinateSpace.None;
 
-            return asset.requirements.requiresTangent;
+            return subGraphData.requirements.requiresTangent;
         }
 
         public bool RequiresTime()
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return false;
 
-            return asset.requirements.requiresTime;
+            return subGraphData.requirements.requiresTime;
         }
 
         public bool RequiresFaceSign(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return false;
 
-            return asset.requirements.requiresFaceSign;
+            return subGraphData.requirements.requiresFaceSign;
         }
 
         public NeededCoordinateSpace RequiresBitangent(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return NeededCoordinateSpace.None;
 
-            return asset.requirements.requiresBitangent;
+            return subGraphData.requirements.requiresBitangent;
         }
 
         public bool RequiresVertexColor(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return false;
 
-            return asset.requirements.requiresVertexColor;
+            return subGraphData.requirements.requiresVertexColor;
         }
 
         public bool RequiresCameraOpaqueTexture(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return false;
 
-            return asset.requirements.requiresCameraOpaqueTexture;
+            return subGraphData.requirements.requiresCameraOpaqueTexture;
         }
 
         public bool RequiresDepthTexture(ShaderStageCapability stageCapability)
         {
-            if (asset == null)
+            if (subGraphData == null)
                 return false;
 
-            return asset.requirements.requiresDepthTexture;
+            return subGraphData.requirements.requiresDepthTexture;
+        }
+
+        public override void GetSourceAssetDependencies(List<string> paths)
+        {
+            base.GetSourceAssetDependencies(paths);
+            if (subGraphData != null)
+            {
+                paths.Add(AssetDatabase.GetAssetPath(subGraphAsset));
+                foreach (var graphGuid in subGraphData.descendents)
+                {
+                    paths.Add(AssetDatabase.GUIDToAssetPath(graphGuid));
+        }
+            }
         }
     }
 }

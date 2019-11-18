@@ -1,3 +1,6 @@
+#ifndef __VERT_MESH_INCLUDED__
+#define __VERT_MESH_INCLUDED__
+
 struct VaryingsToPS
 {
     VaryingsMeshToPS vmesh;
@@ -108,7 +111,7 @@ VaryingsMeshType VertMesh(AttributesMesh input)
     UNITY_TRANSFER_INSTANCE_ID(input, output);
 
 #if defined(HAVE_MESH_MODIFICATION)
-    input = ApplyMeshModification(input, _TimeParameters.xyz);
+    input = ApplyMeshModification(input);
 #endif
 
     // This return the camera relative position (if enable)
@@ -125,7 +128,7 @@ VaryingsMeshType VertMesh(AttributesMesh input)
 
      // Do vertex modification in camera relative space (if enable)
 #if defined(HAVE_VERTEX_MODIFICATION)
-    ApplyVertexModification(input, normalWS, positionRWS, _TimeParameters.xyz);
+    ApplyVertexModification(input, normalWS, positionRWS, _Time);
 #endif
 
 #ifdef TESSELLATION_ON
@@ -204,3 +207,5 @@ VaryingsMeshToPS VertMeshTesselation(VaryingsMeshToDS input)
 }
 
 #endif // TESSELLATION_ON
+
+#endif // __VERT_MESH_INCLUDED__

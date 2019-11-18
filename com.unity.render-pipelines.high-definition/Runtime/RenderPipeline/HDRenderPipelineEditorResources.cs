@@ -1,23 +1,17 @@
 #if UNITY_EDITOR //file must be in realtime assembly folder to be found in HDRPAsset
 using System;
+using UnityEngine.Rendering;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
-    [HelpURL(Documentation.baseURL + Documentation.version + Documentation.subURL + "HDRP-Asset" + Documentation.endURL)]
     public partial class HDRenderPipelineEditorResources : ScriptableObject
     {
         [Reload("Editor/DefaultScene/DefaultSceneRoot.prefab")]
         public GameObject defaultScene;
-        [Reload("Editor/DefaultDXRScene/DefaultSceneRoot.prefab")]
-        public GameObject defaultDXRScene;
-        [Reload("Editor/DefaultScene/Sky and Fog Settings Profile.asset")]
-        public VolumeProfile defaultSkyAndFogProfile;
-        [Reload("Editor/DefaultDXRScene/Sky and Fog Settings Profile.asset")]
-        public VolumeProfile defaultDXRSkyAndFogProfile;
-        [Reload("Editor/DefaultScene/Scene PostProcess Profile.asset")]
+        [Reload("Editor/DefaultScene/DefaultRenderingSettings.asset")]
+        public VolumeProfile defaultRenderSettingsProfile;
+        [Reload("Editor/DefaultScene/DefaultPostProcessingSettings.asset")]
         public VolumeProfile defaultPostProcessingProfile;
-        [Reload("Editor/DefaultDXRScene/Scene PostProcess Profile.asset")]
-        public VolumeProfile defaultDXRPostProcessingProfile;
         [Reload(new[]
         {
             "Runtime/RenderPipelineResources/Skin Diffusion Profile.asset",
@@ -28,6 +22,8 @@ namespace UnityEngine.Rendering.HighDefinition
         [Serializable, ReloadGroup]
         public sealed class ShaderResources
         {
+            public Shader defaultSpeedTree7Shader;
+            public Shader defaultSpeedTree8Shader;
             public Shader terrainDetailLitShader;
             public Shader terrainDetailGrassShader;
             public Shader terrainDetailGrassBillboardShader;
@@ -45,8 +41,6 @@ namespace UnityEngine.Rendering.HighDefinition
             public Material defaultDecalMat;
             [Reload("Runtime/RenderPipelineResources/Material/DefaultHDTerrainMaterial.mat")]
             public Material defaultTerrainMat;
-            [Reload("Editor/RenderPipelineResources/Materials/GUITextureBlit2SRGB.mat")]
-            public Material GUITextureBlit2SRGB;
         }
 
         [Serializable, ReloadGroup]
@@ -86,7 +80,7 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 var resources = target as HDRenderPipelineEditorResources;
                 resources.defaultScene = null;
-                resources.defaultSkyAndFogProfile = null;
+                resources.defaultRenderSettingsProfile = null;
                 resources.defaultPostProcessingProfile = null;
                 resources.defaultDiffusionProfileSettingsList = null;
                 resources.materials = null;

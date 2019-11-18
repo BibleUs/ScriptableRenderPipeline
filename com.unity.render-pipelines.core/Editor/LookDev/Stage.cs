@@ -8,9 +8,6 @@ using UnityEngine.Rendering.LookDev;
 namespace UnityEditor.Rendering.LookDev
 {
     //TODO: add undo support
-    /// <summary>
-    /// Class handling object of the scene with isolation from other scene based on culling
-    /// </summary>
     public class Stage : IDisposable
     {
         const int k_PreviewCullingLayerIndex = 31; //Camera.PreviewCullingLayer; //TODO: expose or reflection
@@ -21,23 +18,16 @@ namespace UnityEditor.Rendering.LookDev
         private readonly List<GameObject> m_GameObjects = new List<GameObject>();
         private readonly List<GameObject> m_PersistentGameObjects = new List<GameObject>();
         private readonly Camera m_Camera;
-        private readonly Light m_SunLight;
 
         /// <summary>Get access to the stage's camera</summary>
         public Camera camera => m_Camera;
-
-        /// <summary>Get access to the stage's light</summary>
-        public Light sunLight => m_SunLight;
 
         /// <summary>Get access to the stage's scene</summary>
         public Scene scene => m_PreviewScene;
 
         private StageRuntimeInterface SRI;
         public StageRuntimeInterface runtimeInterface
-            => SRI ?? (SRI = new StageRuntimeInterface(
-                CreateGameObjectIntoStage,
-                () => camera,
-                () => sunLight));
+            => SRI ?? (SRI = new StageRuntimeInterface(CreateGameObjectIntoStage, () => camera));
 
         /// <summary>
         /// Construct a new stage to let your object live.
@@ -51,26 +41,29 @@ namespace UnityEditor.Rendering.LookDev
 
             m_PreviewScene = EditorSceneManager.NewPreviewScene();
             m_PreviewScene.name = sceneName;
-
+            
             var camGO = EditorUtility.CreateGameObjectWithHideFlags("Look Dev Camera", HideFlags.HideAndDontSave, typeof(Camera));
-            MoveIntoStage(camGO, true); //position will be updated right before rendering
+            MoveIntoStage(camGO, new Vector3(0, 0, -6), Quaternion.identity, true);
             camGO.layer = k_PreviewCullingLayerIndex;
 
             m_Camera = camGO.GetComponent<Camera>();
             m_Camera.cameraType = CameraType.Game;  //cannot be preview in HDRP: too many things skiped
             m_Camera.enabled = false;
             m_Camera.clearFlags = CameraClearFlags.Depth;
+            m_Camera.fieldOfView = 90;
+            m_Camera.farClipPlane = 10.0f;
+            m_Camera.nearClipPlane = 2.0f;
             m_Camera.cullingMask = 1 << k_PreviewCullingLayerIndex;
             m_Camera.renderingPath = RenderingPath.DeferredShading;
             m_Camera.useOcclusionCulling = false;
             m_Camera.scene = m_PreviewScene;
-
-            var lightGO = EditorUtility.CreateGameObjectWithHideFlags("Look Dev Sun", HideFlags.HideAndDontSave, typeof(Light));
-            MoveIntoStage(lightGO, true); //position will be updated right before rendering
-            m_SunLight = lightGO.GetComponent<Light>();
-            m_SunLight.type = LightType.Directional;
-            m_SunLight.shadows = LightShadows.Soft;
-            m_SunLight.intensity = 0f;
+        }
+        
+        ~Stage()
+        {
+            if (SRI != null)
+                SRI.SRPData = null;
+            SRI = null;
         }
 
         /// <summary>
@@ -160,6 +153,13 @@ namespace UnityEditor.Rendering.LookDev
             return handle;
         }
 
+        /// <summary>Clear and close the stage's scene.</summary>
+        public void Dispose()
+        {
+            Clear(persistent: true);
+            EditorSceneManager.ClosePreviewScene(m_PreviewScene);
+        }
+
         /// <summary>Clear all scene object except camera.</summary>
         /// <param name="persistent">
         /// [OPTIONAL] If true, clears also persistent objects.
@@ -210,33 +210,9 @@ namespace UnityEditor.Rendering.LookDev
             foreach (Light light in m_Camera.GetComponentsInChildren<Light>())
                 light.enabled = visible;
         }
-
-        private bool disposedValue = false; // To detect redundant calls
-
-        void CleanUp()
-        {
-            if (!disposedValue)
-            {
-                if (SRI != null)
-                    SRI.SRPData = null;
-                SRI = null;
-                EditorSceneManager.ClosePreviewScene(m_PreviewScene);
-
-                disposedValue = true;
-            }
-        }
-
-        ~Stage() => CleanUp();
-
-        /// <summary>Clear and close the stage's scene.</summary>
-        public void Dispose()
-        {
-            CleanUp();
-            GC.SuppressFinalize(this);
-        }
     }
-
-    class StageCache : IDisposable
+    
+    class StageCache
     {
         const string firstStageName = "LookDevFirstView";
         const string secondStageName = "LookDevSecondView";
@@ -259,7 +235,7 @@ namespace UnityEditor.Rendering.LookDev
             };
             initialized = true;
         }
-
+        
         Stage InitStage(ViewIndex index, IDataProvider dataProvider)
         {
             Stage stage;
@@ -267,19 +243,17 @@ namespace UnityEditor.Rendering.LookDev
             {
                 case ViewIndex.First:
                     stage = new Stage(firstStageName);
-                    stage.camera.backgroundColor = new Color32(5, 5, 5, 255);
-                    stage.camera.name += "_1";
+                    stage.camera.backgroundColor = Compositer.firstViewGizmoColor;
                     break;
                 case ViewIndex.Second:
                     stage = new Stage(secondStageName);
-                    stage.camera.backgroundColor = new Color32(5, 5, 5, 255);
-                    stage.camera.name += "_2";
+                    stage.camera.backgroundColor = Compositer.secondViewGizmoColor;
                     break;
                 default:
                     throw new ArgumentException("Unknown ViewIndex: " + index);
             }
 
-            dataProvider.FirstInitScene(stage.runtimeInterface);
+            dataProvider.FirstInit(stage.runtimeInterface);
             return stage;
         }
 
@@ -298,35 +272,11 @@ namespace UnityEditor.Rendering.LookDev
             if (viewContent.viewedObjectReference != null && !viewContent.viewedObjectReference.Equals(null))
                 viewContent.viewedInstanceInPreview = stage.InstantiateIntoStage(viewContent.viewedObjectReference);
         }
-
+        
         public void UpdateSceneLighting(ViewIndex index, IDataProvider provider)
         {
             Stage stage = this[index];
-            Environment environment = m_Contexts.GetViewContent(index).environment;
-            provider.UpdateSky(stage.camera,
-                environment == null ? default : environment.sky,
-                stage.runtimeInterface);
-        }
-
-        private bool disposedValue = false; // To detect redundant calls
-
-        void CleanUp()
-        {
-            if (!disposedValue)
-            {
-                foreach (Stage stage in m_Stages)
-                    stage.Dispose();
-
-                disposedValue = true;
-            }
-        }
-
-        ~StageCache() => CleanUp();
-
-        public void Dispose()
-        {
-            CleanUp();
-            GC.SuppressFinalize(this);
+            provider.UpdateSky(stage.camera, m_Contexts.GetViewContent(index).environment?.sky.cubemap, stage.runtimeInterface);
         }
     }
 }

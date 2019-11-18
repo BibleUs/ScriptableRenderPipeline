@@ -36,9 +36,13 @@
     TEXTURE2D_X_UINT(_ContactShadowTexture);
 
     // Screen space shadows
-    TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture);
+    TEXTURE2D_X(_ScreenSpaceShadowsTexture);
 
-#if RAYTRACING_ENABLED
+
+#if SHADEROPTIONS_RAYTRACING
+    // Area shadow paper texture
+    TEXTURE2D_ARRAY(_AreaShadowTexture);
+
     // Indirect Diffuse Texture
     TEXTURE2D_X(_IndirectDiffuseTexture);
 #endif

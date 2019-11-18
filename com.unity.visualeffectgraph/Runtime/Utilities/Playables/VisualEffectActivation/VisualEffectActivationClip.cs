@@ -6,7 +6,7 @@ using UnityEngine.Timeline;
 using UnityEngine.Experimental.VFX;
 
 [Serializable]
-class VisualEffectActivationClip : PlayableAsset, ITimelineClipAsset
+public class VisualEffectActivationClip : PlayableAsset, ITimelineClipAsset
 {
     public VisualEffectActivationBehaviour activationBehavior = new VisualEffectActivationBehaviour();
 

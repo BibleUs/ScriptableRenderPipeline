@@ -1,8 +1,8 @@
 using UnityEngine.Profiling;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
-    internal enum CustomSamplerId
+    public enum CustomSamplerId
     {
         PushGlobalParameters,
         CopySetDepthBuffer,
@@ -11,10 +11,9 @@ namespace UnityEngine.Rendering.HighDefinition
         Forward,
         RenderSSAO,
         ResolveSSAO,
-        RenderShadowMaps,
+        RenderShadows,
         ScreenSpaceShadows,
         BuildLightList,
-        ContactShadows,
         BlitToFinalRT,
         Distortion,
         ApplyDistortion,
@@ -65,10 +64,8 @@ namespace UnityEngine.Rendering.HighDefinition
         RaytracingFilterReflection,
         RaytracingAmbientOcclusion,
         RaytracingFilterAO,
-        RaytracingDirectionalLightShadow,
-        RaytracingLightShadow,
-        RaytracingIntegrateIndirectDiffuse,
-        RaytracingFilterIndirectDiffuse,
+        RaytracingShadowIntegration,
+        RaytracingShadowCombination,
         RaytracingDebug,
 
         // Profile sampler for tile pass
@@ -78,6 +75,7 @@ namespace UnityEngine.Rendering.HighDefinition
         TPScreenSpaceShadows,
         TPTileSettingsEnableTileAndCluster,
         TPForwardPass,
+        TPForwardTiledClusterpass,
         TPDisplayShadows,
         TPRenderDeferredLighting,
 
@@ -90,7 +88,6 @@ namespace UnityEngine.Rendering.HighDefinition
         UpsampleLowResTransparent,
 
         // Post-processing
-        AlphaCopy,
         StopNaNs,
         Exposure,
         TemporalAntialiasing,
@@ -117,14 +114,11 @@ namespace UnityEngine.Rendering.HighDefinition
         FXAA,
         SMAA,
         FinalPost,
-        CustomPostProcessBeforePP,
-        CustomPostProcessAfterPP,
-        CustomPostProcessBeforeTransparent,
 
         Max
     }
 
-    internal static class HDCustomSamplerExtension
+    public static class HDCustomSamplerExtension
     {
         static CustomSampler[] s_Samplers;
 

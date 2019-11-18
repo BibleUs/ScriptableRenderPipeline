@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UnityEditor.Experimental.VFX.Utility
 {
-    class PointCache : ScriptableObject
+    public class PointCache : ScriptableObject
     {
         public int PointCount;
         public Texture[] surfaces;

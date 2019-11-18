@@ -1,7 +1,8 @@
 using System;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEditor.Rendering;
+using UnityEngine.Experimental.Rendering.HDPipeline;
 
-namespace UnityEditor.Rendering.HighDefinition
+namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
     internal abstract class SerializedHDProbe
     {
@@ -9,9 +10,7 @@ namespace UnityEditor.Rendering.HighDefinition
         internal enum EditorOnlyData
         {
             None = 0,
-            CaptureSettingsIsAdvanced = 1 << 0,
-            InfluenceVolumeIsAdvanced = 1 << 1,
-            CustomSettingsIsAdvanced = 1 << 2
+            CaptureSettingsIsAdvanced = 1 << 0
         }
 
         internal SerializedObject serializedObject;

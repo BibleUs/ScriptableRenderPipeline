@@ -4,102 +4,20 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [7.1.5] - 2019-11-15
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.1.4] - 2019-11-13
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.1.3] - 2019-11-04
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.1.2] - 2019-09-19
-### Added
-- Added samples for Procedural Patterns to the package.
-- You can now use the right-click context menu to delete Sticky Notes.
-- Added support for vertex skinning when you use the DOTS animation package.
-
-### Fixed 
-- The Editor now displays correct errors for missing or deleted Sub Graph Assets.
-- You can no longer drag and drop recursive nodes onto Sub Graph Assets.
-- Shader Graph no longer references the `NUnit` package.
-- Fixed a shader compatibility issue in the SRP Batcher when you use a hybrid instancing custom variable.
-- Fixed an issue where Unity would crash when you imported a Shader Graph Asset with invalid formatting.
-- Fixed an issue with the animated preview when there is no Camera with animated Materials in the Editor.
-- Triplanar nodes no longer use Camera-relative world space by default in HDRP.
-- Errors no longer occur when you activate `Enable GPU Instancing` on Shader Graph Materials. [1184870](https://issuetracker.unity3d.com/issues/universalrp-shader-compilation-error-when-using-gpu-instancing)
-- Errors no longer occur when there are multiple tangent transform nodes on a graph. [1185752](https://issuetracker.unity3d.com/issues/shadergraph-fails-to-compile-with-redefinition-of-transposetangent-when-multiple-tangent-transform-nodes-are-plugged-in)
-- The Main Preview for Sprite Lit and Sprite Unlit master nodes now displays the correct color. [1184656](https://issuetracker.unity3d.com/issues/shadergraph-preview-for-lit-and-unlit-master-node-wrong-color-when-color-is-set-directly-on-master-node)
-- Shader Graph shaders in `Always Include Shaders` no longer crash builds. [1191757](https://issuetracker.unity3d.com/issues/lwrp-build-crashes-when-built-with-shadergraph-file-added-to-always-include-shaders-list)
-- The `Transform` node now correctly transforms Absolute World to Object.
-
-## [7.1.1] - 2019-09-05
-### Added
-- You can now define shader keywords on the Blackboard. Use these keywords on the graph to create static branches in the generated shader.
-- The tab now shows whether you are working in a Sub Graph or a Shader Graph file.
-- The Shader Graph importer now bakes the output node type name into a meta-data object.
-
-### Fixed
-- The Shader Graph preview no longer breaks when you create new PBR Graphs.
-- Fixed an issue where deleting a group and a property at the same time would cause an error.
-- Fixed the epsilon that the Hue Node uses to avoid NaN on platforms that support half precision.
-- Emission nodes no longer produce errors when you use them in Sub Graphs.
-- Exposure nodes no longer produce errors when you use them in Sub Graphs.
-- Unlit master nodes no longer define unnecessary properties in the Universal Render Pipeline.
-- Errors no longer occur when you convert a selection to a Sub Graph.
-- Color nodes now handle Gamma and Linear conversions correctly.
-- Sub Graph Output nodes now link to the correct documentation page.
-- When you use Keywords, PBR and Unlit master nodes no longer produce errors.
-- PBR master nodes now calculate Global Illumination (GI) correctly.
-- PBR master nodes now apply surface normals.
-- PBR master nodes now apply fog.
-
-## [7.0.1] - 2019-07-25
-### Changed
-- New Shader Graph windows are now docked to either existing Shader Graph windows, or to the Scene View.
-
-### Fixed
-- Fixed various dependency tracking issues with Sub Graphs and HLSL files from Custom Function Nodes.
-- Fixed an error that previously occurred when you used `Sampler State` input ports on Sub Graphs.
-- `Normal Reconstruct Z` node is now compatible with both fragment and vertex stages. 
-- `Position` node now draws the correct label for **Absolute World**. 
-- Node previews now inherit preview type correctly.
-- Normal maps now unpack correctly for mobile platforms.
-- Fixed an error that previously occurred when you used the Gradient Sample node and your system locale uses commas instead of periods.
-- Fixed an issue where you couldn't group several nodes.
-
-## [7.0.0] - 2019-07-10
+## [7.0.0-preview] - 2019-XX-XX
 ### Added
 - You can now use the `SHADERGRAPH_PREVIEW` keyword in `Custom Function Node` to generate different code for preview Shaders.
 - Color Mode improves node visibility by coloring the title bar by Category, Precision, or custom colors.
 - You can now set the precision of a Shader Graph and individual nodes.
-- Added the `_TimeParameters` variable which contains `Time`, `Sin(Time)`, and `Cosine(Time)`
-- _Absolute World_ space on `Position Node` now provides absolute world space coordinates regardless of the active render pipeline.
-- You can now add sticky notes to graphs.
 
 ### Changed
 - The `Custom Function Node` now uses an object field to reference its source when using `File` mode.
-- To enable master nodes to generate correct motion vectors for time-based vertex modification, time is now implemented as an input to the graph rather than as a global uniform.
-- **World** space on `Position Node` now uses the default world space coordinates of the active render pipeline. 
 
 ### Fixed
 - Fixed an error in `Custom Function Node` port naming.
 - `Sampler State` properties and nodes now serialize correctly.
 - Labels in the Custom Port menu now use the correct coloring when using the Personal skin.
 - Fixed an error that occured when creating a Sub Graph from a selection containing a Group Node.
-- When you change a Sub Graph, Shader Graph windows now correctly reload.
-- When you save a Shader Graph, all other Shader Graph windows no longer re-compile their preview Shaders.
-- Shader Graph UI now draws with correct styling for 2019.3.
-- When deleting edge connections to nodes with a preview error, input ports no longer draw in the wrong position.
-- Fixed an error involving deprecated components from VisualElements.
-- When you convert nodes to a Sub Graph, the nodes are now placed correctly in the Sub Graph.
-- The `Bitangent Vector Node` now generates all necessary shader requirements.
 
 ## [6.7.0-preview] - 2019-05-16
 ### Added
@@ -127,7 +45,6 @@ The version number for this package has increased due to a version update of a r
 - When you save a graph that contains a Sub Graph node, the Shader Graph window no longer freezes.
 - Fixed an error that occured when using multiple Sampler State nodes with different parameters.
 - Fixed an issue causing default inputs to be misaligned in certain cases.
-- You can no longer directly connect slots with invalid types. When the graph detects that situation, it now doesn't break and gives an error instead.
 
 ## [6.6.0] - 2019-04-01
 ### Added

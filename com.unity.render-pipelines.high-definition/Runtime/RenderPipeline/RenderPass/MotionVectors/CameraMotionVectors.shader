@@ -79,8 +79,7 @@ Shader "Hidden/HDRP/CameraMotionVectors"
                 Fail Zero   // We won't need the bit anymore.
             }
 
-            Cull Off ZWrite Off
-            ZTest Less // Required for XR occlusion mesh optimization
+            Cull Off ZWrite Off ZTest Always
 
             HLSLPROGRAM
 

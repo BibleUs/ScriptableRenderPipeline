@@ -2,9 +2,10 @@
     "name": "Unity.VisualEffectGraph.Runtime",
     "references": [
         "Unity.Timeline",
-        "Unity.ugui",
+		"Unity.ugui",
         "Unity.RenderPipelines.HighDefinition.Runtime"
     ],
+    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
@@ -29,7 +30,7 @@
             "define": "VFX_HAS_TERRAINMODULE"
         },
         {
-            "name": "com.unity.ugui",
+            "name": "com.unity.modules.ui",
             "expression": "1.0.0",
             "define": "VFX_HAS_UI"
         },

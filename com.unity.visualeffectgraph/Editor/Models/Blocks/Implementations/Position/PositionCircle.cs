@@ -12,13 +12,13 @@ namespace UnityEditor.VFX.Block
 
         public class InputProperties
         {
-            [Tooltip("Sets the circle used for positioning the particles.")]
+            [Tooltip("The circle used for positioning particles.")]
             public ArcCircle ArcCircle = ArcCircle.defaultValue;
         }
 
         public class CustomProperties
         {
-            [Range(0, 1), Tooltip("Sets the position on the arc to emit particles from when ‘Custom Emission’ is used.")]
+            [Range(0, 1), Tooltip("When using customized emission, control the position around the arc to emit particles from.")]
             public float ArcSequencer = 0.0f;
         }
 
@@ -41,12 +41,12 @@ namespace UnityEditor.VFX.Block
                 var arcSequencer = base.parameters.FirstOrDefault(o => o.name == "ArcSequencer").exp;
 
                 VFXExpression theta = null;
-                if (spawnMode == SpawnMode.Random)
+                if (spawnMode == SpawnMode.Randomized)
                     theta = arcCircle_arc * new VFXExpressionRandom(true);
                 else
                     theta = arcCircle_arc * arcSequencer;
 
-                var one = VFXOperatorUtility.OneExpression[UnityEngine.VFX.VFXValueType.Float];
+                var one = VFXOperatorUtility.OneExpression[UnityEngine.Experimental.VFX.VFXValueType.Float];
 
                 var rNorm = VFXOperatorUtility.Sqrt(volumeFactor + (one - volumeFactor) * new VFXExpressionRandom(true)) * arcCircleRadius;
                 var sinTheta = new VFXExpressionSin(theta);

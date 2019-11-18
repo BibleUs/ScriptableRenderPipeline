@@ -1,6 +1,7 @@
+using UnityEngine.Rendering;
 using UnityEngine.Serialization;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     public partial class RenderPipelineResources : ScriptableObject, IVersionable<RenderPipelineResources.Version>
     {

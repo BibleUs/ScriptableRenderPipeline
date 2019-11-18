@@ -1,6 +1,8 @@
 using System;
+using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     public partial struct DensityVolumeArtistParameters
     {

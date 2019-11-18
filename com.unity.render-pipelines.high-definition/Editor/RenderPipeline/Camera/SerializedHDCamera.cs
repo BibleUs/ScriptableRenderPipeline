@@ -1,8 +1,8 @@
 using UnityEditor.Rendering;
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Experimental.Rendering.HDPipeline;
 
-namespace UnityEditor.Rendering.HighDefinition
+namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
     class SerializedHDCamera
     {
@@ -21,7 +21,6 @@ namespace UnityEditor.Rendering.HighDefinition
 
         public SerializedProperty antialiasing;
         public SerializedProperty SMAAQuality;
-        public SerializedProperty taaSharpenStrength;
         public SerializedProperty dithering;
         public SerializedProperty stopNaNs;
         public SerializedProperty clearColorMode;
@@ -51,8 +50,8 @@ namespace UnityEditor.Rendering.HighDefinition
 
             var hideFlags = serializedAdditionalDataObject.FindProperty("m_ObjectHideFlags");
             // We don't hide additional camera data anymore on UX team request. To be compatible with already author scene we force to be visible
-            if ((hideFlags.intValue & (int)HideFlags.HideInInspector) > 0)
-                hideFlags.intValue = (int)HideFlags.None;
+            //hideFlags.intValue = (int)HideFlags.HideInInspector;
+            hideFlags.intValue = (int)HideFlags.None;
             serializedAdditionalDataObject.ApplyModifiedProperties();
 
             //backgroundColor = serializedObject.FindProperty("m_BackGroundColor");
@@ -66,7 +65,6 @@ namespace UnityEditor.Rendering.HighDefinition
 
             antialiasing = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.antialiasing);
             SMAAQuality = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.SMAAQuality);
-            taaSharpenStrength = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.taaSharpenStrength);
             dithering = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.dithering);
             stopNaNs = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.stopNaNs);
             clearColorMode = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.clearColorMode);

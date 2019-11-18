@@ -179,9 +179,9 @@ Shader "Hidden/HDRenderPipeline/Sky/HDRISky"
     
     float4 Frag(Varyings input) : SV_Target
     {
-        // Points towards the Camera
+        // Points towards the camera
         float3 viewDirWS = normalize(mul(float3(input.positionCS.xy, 1.0), (float3x3)_PixelCoordToViewDirWS));
-        // Reverse it to point into the Scene
+        // Reverse it to point into the scene
         float3 dir = -viewDirWS;
     
         // Rotate direction

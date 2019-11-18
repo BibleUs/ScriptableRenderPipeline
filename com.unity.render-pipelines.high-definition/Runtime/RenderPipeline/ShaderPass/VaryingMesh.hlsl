@@ -1,3 +1,6 @@
+#ifndef __VARYING_MESH_INCLUDED__
+#define __VARYING_MESH_INCLUDED__
+
 struct AttributesMesh
 {
     float3 positionOS   : POSITION;
@@ -130,6 +133,8 @@ PackedVaryingsMeshToPS PackVaryingsMeshToPS(VaryingsMeshToPS input)
     return output;
 }
 
+#ifndef CUSTOM_UNPACK
+
 FragInputs UnpackVaryingsMeshToFragInputs(PackedVaryingsMeshToPS input)
 {
     FragInputs output;
@@ -140,7 +145,7 @@ FragInputs UnpackVaryingsMeshToFragInputs(PackedVaryingsMeshToPS input)
     // Init to some default value to make the computer quiet (else it output "divide by zero" warning even if value is not used).
     // TODO: this is a really poor workaround, but the variable is used in a bunch of places
     // to compute normals which are then passed on elsewhere to compute other values...
-    output.tangentToWorld = k_identity3x3;
+    output.worldToTangent = k_identity3x3;
 
     output.positionSS = input.positionCS; // input.positionCS is SV_Position
 
@@ -150,7 +155,7 @@ FragInputs UnpackVaryingsMeshToFragInputs(PackedVaryingsMeshToPS input)
 
 #ifdef VARYINGS_NEED_TANGENT_TO_WORLD
     float4 tangentWS = float4(input.interpolators2.xyz, input.interpolators2.w > 0.0 ? 1.0 : -1.0); // must not be normalized (mikkts requirement)
-    output.tangentToWorld = BuildTangentToWorld(tangentWS, input.interpolators1.xyz);
+    output.worldToTangent = BuildWorldToTangent(tangentWS, input.interpolators1.xyz);
 #endif // VARYINGS_NEED_TANGENT_TO_WORLD
 
 #ifdef VARYINGS_NEED_TEXCOORD0
@@ -175,6 +180,8 @@ FragInputs UnpackVaryingsMeshToFragInputs(PackedVaryingsMeshToPS input)
 
     return output;
 }
+
+#endif
 
 #ifdef TESSELLATION_ON
 
@@ -351,3 +358,5 @@ VaryingsMeshToDS InterpolateWithBaryCoordsMeshToDS(VaryingsMeshToDS input0, Vary
 }
 
 #endif // TESSELLATION_ON
+
+#endif // __VARYING_MESH_INCLUDED__

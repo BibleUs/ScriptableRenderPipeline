@@ -1,8 +1,11 @@
 using System;
+using UnityEngine.Rendering;
 using UnityEngine.Serialization;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
+
+
     [Serializable]
     public partial struct DensityVolumeArtistParameters
     {
@@ -94,7 +97,7 @@ namespace UnityEngine.Rendering.HighDefinition
             distanceFadeEnd   = Mathf.Max(distanceFadeStart, distanceFadeEnd);
         }
 
-        internal DensityVolumeEngineData ConvertToEngineData()
+        public DensityVolumeEngineData ConvertToEngineData()
         {
             DensityVolumeEngineData data = new DensityVolumeEngineData();
 
@@ -128,9 +131,8 @@ namespace UnityEngine.Rendering.HighDefinition
         }
     } // class DensityVolumeParameters
 
-    [HelpURL(Documentation.baseURL + Documentation.version + Documentation.subURL + "Density-Volume" + Documentation.endURL)]
     [ExecuteAlways]
-    [AddComponentMenu("Rendering/Density Volume")]
+    [AddComponentMenu("Rendering/Density Volume", 1100)]
     public partial class DensityVolume : MonoBehaviour
     {
         public DensityVolumeArtistParameters parameters = new DensityVolumeArtistParameters(Color.white, 10.0f, 0.0f);
@@ -140,7 +142,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public Action OnTextureUpdated;
 
         //Gather and Update any parameters that may have changed
-        internal void PrepareParameters(bool animate, float time)
+        public void PrepareParameters(bool animate, float time)
         {
             //Texture has been updated notify the manager
             if (previousVolumeMask != parameters.volumeMask)
@@ -179,4 +181,4 @@ namespace UnityEngine.Rendering.HighDefinition
             parameters.Constrain();
         }
     }
-}
+} // UnityEngine.Experimental.Rendering.HDPipeline

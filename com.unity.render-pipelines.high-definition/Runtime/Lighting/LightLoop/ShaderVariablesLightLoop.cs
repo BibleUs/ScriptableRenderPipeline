@@ -1,7 +1,8 @@
-namespace UnityEngine.Rendering.HighDefinition
+
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     [GenerateHLSL(needAccessors = false, omitStructDeclaration = true)]
-    unsafe struct ShaderVariablesLightLoop
+    public unsafe struct ShaderVariablesLightLoop
     {
         public const int s_MaxEnv2DLight = 32;
 
@@ -56,6 +57,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
         public int _EnvSliceSize;
         public uint _CookieSizePOT; // Cookie size = 1 << _CookieSizePOT
+
+        // Uniform variables that defines if we shall be using the shadow area texture or not
+        public int _RaytracedAreaShadow;
 
         // Uniform variables that defines if we shall be using the raytraced indirect diffuse
         public int _RaytracedIndirectDiffuse;

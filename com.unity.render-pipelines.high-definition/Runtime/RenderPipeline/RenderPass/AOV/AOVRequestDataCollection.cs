@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     /// <summary>A collection of frame passes. To build one, <see cref="AOVRequestBuilder"/></summary>
     public class AOVRequestDataCollection : IEnumerable<AOVRequestData>, IDisposable
@@ -11,9 +11,7 @@ namespace UnityEngine.Rendering.HighDefinition
         // Owned
         private List<AOVRequestData> m_AOVRequestData;
 
-        /// <summary>Build a new collection from requests.</summary>
-        /// <param name="aovRequestData">Requests to include in the collection.</param>
-        public AOVRequestDataCollection(List<AOVRequestData> aovRequestData)
+        internal AOVRequestDataCollection(List<AOVRequestData> aovRequestData)
             // Transfer ownership of the list
             => m_AOVRequestData = aovRequestData;
 

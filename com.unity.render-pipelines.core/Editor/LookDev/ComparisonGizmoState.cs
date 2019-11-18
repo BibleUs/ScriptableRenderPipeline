@@ -7,44 +7,35 @@ namespace UnityEditor.Rendering.LookDev
     [Serializable]
     public class ComparisonGizmoState
     {
-        internal const float thickness = 0.0028f;
-        internal const float thicknessSelected = 0.015f;
-        internal const float circleRadius = 0.014f;
-        internal const float circleRadiusSelected = 0.03f;
-        internal const float blendFactorCircleRadius = 0.01f;
-        internal const float blendFactorCircleRadiusSelected = 0.03f;
-
-        /// <summary>Position of the first extremity</summary>
+        public const float thickness = 0.0028f;
+        public const float thicknessSelected = 0.015f;
+        public const float circleRadius = 0.014f;
+        public const float circleRadiusSelected = 0.03f;
+        public const float blendFactorCircleRadius = 0.01f;
+        public const float blendFactorCircleRadiusSelected = 0.03f;
+        
         public Vector2 point1 { get; private set; }
-        /// <summary>Position of the second extremity</summary>
         public Vector2 point2 { get; private set; }
-        /// <summary>Position of the center</summary>
         [field: SerializeField]
         public Vector2 center { get; private set; } = Vector2.zero;
-        /// <summary>Angle from vertical in radian</summary>
         [field: SerializeField]
         public float angle { get; private set; }
-        /// <summary>Length between extremity</summary>
         [field: SerializeField]
         public float length { get; private set; } = 0.2f;
-        internal Vector4 plane { get; private set; }
-        internal Vector4 planeOrtho { get; private set; }
-        /// <summary>
-        /// The position of the blending slider.
-        /// From value -1 on first extremity to value 1 on second extremity.
-        /// </summary>
+        public Vector4 plane { get; private set; }
+        public Vector4 planeOrtho { get; private set; }
         [field: SerializeField]
         public float blendFactor { get; set; }
 
-        internal float blendFactorMaxGizmoDistance
+        public float blendFactorMaxGizmoDistance
             => length - circleRadius - blendFactorCircleRadius;
 
-        internal float blendFactorMinGizmoDistance
+        public float blendFactorMinGizmoDistance
             => length - circleRadius - blendFactorCircleRadiusSelected;
 
         internal void Init()
             => Update(center, length, angle);
-
+        
         //TODO: optimize
         private Vector4 Get2DPlane(Vector2 firstPoint, float angle)
         {
@@ -72,11 +63,6 @@ namespace UnityEditor.Rendering.LookDev
             return result;
         }
 
-        /// <summary>
-        /// Update all fields while moving one extremity
-        /// </summary>
-        /// <param name="point1">The new first extremity position</param>
-        /// <param name="point2">The new second extremity position</param>
         public void Update(Vector2 point1, Vector2 point2)
         {
             this.point1 = point1;
@@ -94,12 +80,6 @@ namespace UnityEditor.Rendering.LookDev
             planeOrtho = Get2DPlane(center, angle + 0.5f * (float)Mathf.PI);
         }
 
-        /// <summary>
-        /// Update all fields while moving the bar
-        /// </summary>
-        /// <param name="center">The new center position</param>
-        /// <param name="length">Tne new length of this gizmo</param>
-        /// <param name="angle">The new angle of this gizmo</param>
         public void Update(Vector2 center, float length, float angle)
         {
             this.center = center;

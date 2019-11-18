@@ -1,11 +1,13 @@
-using UnityEngine.Rendering.HighDefinition.Attributes;
+using UnityEngine;
+using System;
+using UnityEngine.Experimental.Rendering.HDPipeline.Attributes;
 
 //-----------------------------------------------------------------------------
 // structure definition
 //-----------------------------------------------------------------------------
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
-    class Unlit : RenderPipelineMaterial
+    public class Unlit : RenderPipelineMaterial
     {
         //-----------------------------------------------------------------------------
         // SurfaceData

@@ -2,7 +2,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor.Graphing;
 using UnityEditor.ShaderGraph.Drawing.Controls;
-using UnityEditor.ShaderGraph.Internal;
 
 namespace UnityEditor.ShaderGraph
 {    
@@ -61,7 +60,7 @@ namespace UnityEditor.ShaderGraph
             AddSlot(new Vector4MaterialSlot(OutputSlotId, kOutputSlotName, kOutputSlotName, SlotType.Output, Vector4.zero, ShaderStageCapability.Fragment));
             AddSlot(new Texture2DInputMaterialSlot(TextureInputId, kTextureInputName, kTextureInputName));
             AddSlot(new SamplerStateMaterialSlot(SamplerInputId, kSamplerInputName, kSamplerInputName, SlotType.Input));
-            AddSlot(new PositionMaterialSlot(PositionInputId, kPositionInputName, kPositionInputName, CoordinateSpace.AbsoluteWorld));
+            AddSlot(new PositionMaterialSlot(PositionInputId, kPositionInputName, kPositionInputName, CoordinateSpace.World));
             AddSlot(new NormalMaterialSlot(NormalInputId, kNormalInputName, kNormalInputName, CoordinateSpace.World));
             AddSlot(new Vector1MaterialSlot(TileInputId, kTileInputName, kTileInputName, SlotType.Input, 1));
             AddSlot(new Vector1MaterialSlot(BlendInputId, kBlendInputName, kBlendInputName, SlotType.Input, 1));
@@ -71,13 +70,13 @@ namespace UnityEditor.ShaderGraph
         public override void ValidateNode()
         {
             var textureSlot = FindInputSlot<Texture2DInputMaterialSlot>(TextureInputId);
-            textureSlot.defaultType = (textureType == TextureType.Normal ? Texture2DShaderProperty.DefaultType.Bump : Texture2DShaderProperty.DefaultType.White);
+            textureSlot.defaultType = (textureType == TextureType.Normal ? TextureShaderProperty.DefaultType.Bump : TextureShaderProperty.DefaultType.White);
 
             base.ValidateNode();
         }
 
         // Node generations
-        public virtual void GenerateNodeCode(ShaderStringBuilder sb, GenerationMode generationMode)
+        public virtual void GenerateNodeCode(ShaderStringBuilder sb, GraphContext graphContext, GenerationMode generationMode)
         {
             sb.AppendLine("$precision3 {0}_UV = {1} * {2};", GetVariableNameForNode(),
                 GetSlotValue(PositionInputId, generationMode), GetSlotValue(TileInputId, generationMode));
@@ -98,17 +97,17 @@ namespace UnityEditor.ShaderGraph
                         , GetSlotValue(BlendInputId, generationMode));
                     sb.AppendLine("{0}_Blend /= ({0}_Blend.x + {0}_Blend.y + {0}_Blend.z ).xxx;", GetVariableNameForNode());
 
-                    sb.AppendLine("$precision3 {0}_X = UnpackNormal(SAMPLE_TEXTURE2D({1}, {2}, {0}_UV.zy));"
+                    sb.AppendLine("$precision3 {0}_X = UnpackNormalmapRGorAG(SAMPLE_TEXTURE2D({1}, {2}, {0}_UV.zy));"
                         , GetVariableNameForNode()
                         , id
                         , edgesSampler.Any() ? GetSlotValue(SamplerInputId, generationMode) : "sampler" + id);
 
-                    sb.AppendLine("$precision3 {0}_Y = UnpackNormal(SAMPLE_TEXTURE2D({1}, {2}, {0}_UV.xz));"
+                    sb.AppendLine("$precision3 {0}_Y = UnpackNormalmapRGorAG(SAMPLE_TEXTURE2D({1}, {2}, {0}_UV.xz));"
                         , GetVariableNameForNode()
                         , id
                         , edgesSampler.Any() ? GetSlotValue(SamplerInputId, generationMode) : "sampler" + id);
 
-                    sb.AppendLine("$precision3 {0}_Z = UnpackNormal(SAMPLE_TEXTURE2D({1}, {2}, {0}_UV.xy));"
+                    sb.AppendLine("$precision3 {0}_Z = UnpackNormalmapRGorAG(SAMPLE_TEXTURE2D({1}, {2}, {0}_UV.xy));"
                         , GetVariableNameForNode()
                         , id
                         , edgesSampler.Any() ? GetSlotValue(SamplerInputId, generationMode) : "sampler" + id);
@@ -163,7 +162,7 @@ namespace UnityEditor.ShaderGraph
 
         public NeededCoordinateSpace RequiresPosition(ShaderStageCapability stageCapability)
         {
-            return CoordinateSpace.AbsoluteWorld.ToNeededCoordinateSpace() | CoordinateSpace.World.ToNeededCoordinateSpace();
+            return CoordinateSpace.World.ToNeededCoordinateSpace();
         }
 
         public NeededCoordinateSpace RequiresNormal(ShaderStageCapability stageCapability)

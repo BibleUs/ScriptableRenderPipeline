@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Assertions;
+using UnityEngine.Rendering;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     internal static class HDProbeSystem
     {
@@ -30,7 +31,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public static IList<HDProbe> realtimeViewDependentProbes => s_Instance.realtimeViewDependentProbes;
         public static IList<HDProbe> realtimeViewIndependentProbes => s_Instance.realtimeViewIndependentProbes;
         public static IList<HDProbe> bakedProbes => s_Instance.bakedProbes;
-
+    
         public static void RegisterProbe(HDProbe probe) => s_Instance.RegisterProbe(probe);
         public static void UnregisterProbe(HDProbe probe) => s_Instance.UnregisterProbe(probe);
 
@@ -109,7 +110,7 @@ namespace UnityEngine.Rendering.HighDefinition
                                 );
                                 break;
                             case ProbeSettings.ProbeType.ReflectionProbe:
-                                target = HDRenderUtilities.CreateReflectionProbeRenderTarget(
+                                target = HDRenderUtilities.CreateReflectionProbeTarget(
                                     (int)hd.currentPlatformRenderPipelineSettings.lightLoopSettings.reflectionCubemapSize
                                 );
                                 break;
@@ -254,7 +255,7 @@ namespace UnityEngine.Rendering.HighDefinition
         internal HDProbeCullState PrepareCull(Camera camera)
         {
             // Can happens right before a domain reload
-            // The CullingGroup is disposed at that point
+            // The CullingGroup is disposed at that point 
             if (m_PlanarProbeCullingGroup == null)
                 return default;
 

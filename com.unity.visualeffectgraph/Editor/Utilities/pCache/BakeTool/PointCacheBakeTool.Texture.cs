@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UnityEditor.Experimental.VFX.Utility
 {
-    partial class PointCacheBakeTool : EditorWindow
+    public partial class PointCacheBakeTool : EditorWindow
     {
         public enum DecimationThresholdMode
         {

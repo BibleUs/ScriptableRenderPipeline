@@ -3,9 +3,7 @@
 #ifndef UNITY_SHADER_VARIABLES_INCLUDED
 #define UNITY_SHADER_VARIABLES_INCLUDED
 
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Version.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition-config/Runtime/ShaderConfig.cs.hlsl"
-
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderConfig.cs.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/TextureXR.hlsl"
 
 // CAUTION:
@@ -13,20 +11,14 @@
 // As I haven't change the variables name yet, I simply don't define anything, and I put the transform function at the end of the file outside the guard header.
 // This need to be fixed.
 
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Camera/HDCamera.cs.hlsl"
 #if defined(USING_STEREO_MATRICES)
-    #define _WorldSpaceCameraPos            _XRWorldSpaceCameraPos[unity_StereoEyeIndex].xyz
-    #define _WorldSpaceCameraPosViewOffset  _XRWorldSpaceCameraPosViewOffset[unity_StereoEyeIndex].xyz
-    #define _PrevCamPosRWS                  _XRPrevWorldSpaceCameraPos[unity_StereoEyeIndex].xyz
+    #define _WorldSpaceCameraPos            _XRViewConstants[unity_StereoEyeIndex].worldSpaceCameraPos
+    #define _WorldSpaceCameraPosViewOffset  _XRViewConstants[unity_StereoEyeIndex].worldSpaceCameraPosViewOffset
+    #define _PrevCamPosRWS                  _XRViewConstants[unity_StereoEyeIndex].prevWorldSpaceCameraPos
 #endif
 
 #define UNITY_LIGHTMODEL_AMBIENT (glstate_lightmodel_ambient * 2)
-
-// This only defines the ray tracing macro on the platforms that support ray tracing this should be dx12
-#if (SHADEROPTIONS_RAYTRACING && (defined(SHADER_API_D3D11) || defined(SHADER_API_D3D12)) && !defined(SHADER_API_XBOXONE) && !defined(SHADER_API_PSSL))
-#define RAYTRACING_ENABLED (1)
-#else
-#define RAYTRACING_ENABLED (0)
-#endif
 
 // ----------------------------------------------------------------------------
 
@@ -95,10 +87,6 @@ SAMPLER(sampler_CameraDepthTexture);
 // Color pyramid (width, height, lodcount, Unused)
 TEXTURE2D_X(_ColorPyramidTexture);
 
-// Custom pass buffer
-TEXTURE2D_X(_CustomDepthTexture);
-TEXTURE2D_X(_CustomColorTexture);
-
 // Main lightmap
 TEXTURE2D(unity_Lightmap);
 SAMPLER(samplerunity_Lightmap);
@@ -144,7 +132,6 @@ CBUFFER_START(UnityGlobal)
     float4x4 _InvViewProjMatrix;
     float4x4 _NonJitteredViewProjMatrix;
     float4x4 _PrevViewProjMatrix;       // non-jittered
-    float4x4 _PrevInvViewProjMatrix;       // non-jittered
 
     // TODO: put commonly used vars together (below), and then sort them by the frequency of use (descending).
     // Note: a matrix is 4 * 4 * 4 = 64 bytes (1x cache line), so no need to sort those.
@@ -194,19 +181,18 @@ CBUFFER_START(UnityGlobal)
     float4 _ShadowFrustumPlanes[6];     // { (a, b, c) = N, d = -dot(N, P) } [L, R, T, B, N, F]
 
     // TAA Frame Index ranges from 0 to 7.
-    float4 _TaaFrameInfo;               // { taaSharpenStrength, unused, taaFrameIndex, taaEnabled ? 1 : 0 }
+    // First two channels of this gives you two rotations per cycle.
+    float4 _TaaFrameInfo;           // { sin(taaFrame * PI/2), cos(taaFrame * PI/2), taaFrame, taaEnabled ? 1 : 0 }
 
     // Current jitter strength (0 if TAA is disabled)
     float4 _TaaJitterStrength;          // { x, y, x/width, y/height }
 
     // t = animateMaterials ? Time.realtimeSinceStartup : 0.
-    // We keep all those time value for compatibility with legacy unity but prefer _TimeParameters instead.
     float4 _Time;                       // { t/20, t, t*2, t*3 }
+    float4 _LastTime;                   // { t/20, t, t*2, t*3 }
     float4 _SinTime;                    // { sin(t/8), sin(t/4), sin(t/2), sin(t) }
     float4 _CosTime;                    // { cos(t/8), cos(t/4), cos(t/2), cos(t) }
     float4 unity_DeltaTime;             // { dt, 1/dt, smoothdt, 1/smoothdt }
-    float4 _TimeParameters;             // { t, sin(t), cos(t) }
-    float4 _LastTimeParameters;         // { t, sin(t), cos(t) }
 
     // Volumetric lighting.
     float4 _AmbientProbeCoeffs[7];      // 3 bands of SH, packed, rescaled and convolved with the phase function
@@ -218,22 +204,20 @@ CBUFFER_START(UnityGlobal)
     float  _HeightFogBaseHeight;
     float  _GlobalFogAnisotropy;
 
-    float4 _VBufferViewportSize;           // { w, h, 1/w, 1/h }
+    float4 _VBufferResolution;          // { w, h, 1/w, 1/h }
     uint   _VBufferSliceCount;
     float  _VBufferRcpSliceCount;
     float  _VBufferRcpInstancedViewCount;  // Used to remap VBuffer coordinates for XR
-
-    float  _ContactShadowOpacity;
-    float4 _VBufferSharedUvScaleAndLimit;  // Necessary us to work with sub-allocation (resource aliasing) in the RTHandle system
-
+    float  _Pad3;
+    float4 _VBufferUvScaleAndLimit;        // Necessary us to work with sub-allocation (resource aliasing) in the RTHandle system
     float4 _VBufferDistanceEncodingParams; // See the call site for description
     float4 _VBufferDistanceDecodingParams; // See the call site for description
 
     // TODO: these are only used for reprojection.
     // Once reprojection is performed in a separate pass, we should probably
     // move these to a dedicated CBuffer to avoid polluting the global one.
-    float4 _VBufferPrevViewportSize;
-    float4 _VBufferHistoryPrevUvScaleAndLimit;
+    float4 _VBufferPrevResolution;
+    float4 _VBufferPrevUvScaleAndLimit;
     float4 _VBufferPrevDepthEncodingParams;
     float4 _VBufferPrevDepthDecodingParams;
 
@@ -245,8 +229,7 @@ CBUFFER_START(UnityGlobal)
 
     #define DEFAULT_LIGHT_LAYERS 0xFF
     uint _EnableLightLayers;
-    float _ReplaceDiffuseForIndirect;
-    uint _EnableSkyReflection;
+    uint _EnableSpecularLighting;
 
     uint _EnableSSRefraction;
 
@@ -256,29 +239,11 @@ CBUFFER_START(UnityGlobal)
     uint _XRViewCount;
     int  _FrameCount;
 
-    float _ProbeExposureScale;
-
 CBUFFER_END
 
 // Custom generated by HDRP, not from Unity Engine (passed in via HDCamera)
 #if defined(USING_STEREO_MATRICES)
-CBUFFER_START(UnityXRViewConstants)
-    float4x4 _XRViewMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRInvViewMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRProjMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRInvProjMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRViewProjMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRInvViewProjMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRNonJitteredViewProjMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRPrevViewProjMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRPrevInvViewProjMatrix[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRPrevViewProjMatrixNoCameraTrans[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4x4 _XRPixelCoordToViewDirWS[SHADEROPTIONS_XR_MAX_VIEWS];
-
-    float4 _XRWorldSpaceCameraPos[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4 _XRWorldSpaceCameraPosViewOffset[SHADEROPTIONS_XR_MAX_VIEWS];
-    float4 _XRPrevWorldSpaceCameraPos[SHADEROPTIONS_XR_MAX_VIEWS];
-CBUFFER_END
+    StructuredBuffer<ViewConstants> _XRViewConstants;
 #endif
 
 // Note: To sample camera depth in HDRP we provide these utils functions because the way we store the depth mips can change
@@ -311,26 +276,6 @@ float3 LoadCameraColor(uint2 pixelCoords)
 float3 SampleCameraColor(float2 uv)
 {
     return SampleCameraColor(uv, 0);
-}
-
-float4 SampleCustomColor(float2 uv)
-{
-    return SAMPLE_TEXTURE2D_X_LOD(_CustomColorTexture, s_trilinear_clamp_sampler, uv * _RTHandleScale.xy, 0);
-}
-
-float4 LoadCustomColor(uint2 pixelCoords)
-{
-    return LOAD_TEXTURE2D_X_LOD(_CustomColorTexture, pixelCoords, 0);
-}
-
-float LoadCustomDepth(uint2 pixelCoords)
-{
-    return LOAD_TEXTURE2D_X_LOD(_CustomDepthTexture, pixelCoords, 0).r;
-}
-
-float SampleCustomDepth(float2 uv)
-{
-    return LoadCustomDepth(uint2(uv * _ScreenSize.xy));
 }
 
 float4x4 OptimizeProjectionMatrix(float4x4 M)
@@ -380,20 +325,18 @@ void ApplyCameraRelativeXR(inout float3 positionWS)
 float GetCurrentExposureMultiplier()
 {
 #if SHADEROPTIONS_PRE_EXPOSITION
-    // _ProbeExposureScale is a scale used to perform range compression to avoid saturation of the content of the probes. It is 1.0 if we are not rendering probes.
-    return LOAD_TEXTURE2D(_ExposureTexture, int2(0, 0)).x * _ProbeExposureScale;
+    return LOAD_TEXTURE2D(_ExposureTexture, int2(0, 0)).x;
 #else
-    return _ProbeExposureScale;
+    return 1.0;
 #endif
 }
 
 float GetPreviousExposureMultiplier()
 {
 #if SHADEROPTIONS_PRE_EXPOSITION
-    // _ProbeExposureScale is a scale used to perform range compression to avoid saturation of the content of the probes. It is 1.0 if we are not rendering probes.
-    return LOAD_TEXTURE2D(_PrevExposureTexture, int2(0, 0)).x * _ProbeExposureScale;
+    return LOAD_TEXTURE2D(_PrevExposureTexture, int2(0, 0)).x;
 #else
-    return _ProbeExposureScale;
+    return 1.0;
 #endif
 }
 
@@ -405,7 +348,7 @@ float GetInverseCurrentExposureMultiplier()
 
 float GetInversePreviousExposureMultiplier()
 {
-    float exposure = GetPreviousExposureMultiplier();
+    float exposure = GetCurrentExposureMultiplier();
     return rcp(exposure + (exposure == 0.0)); // zero-div guard
 }
 
@@ -432,6 +375,13 @@ float2 ClampAndScaleUVForBilinear(float2 UV)
 float2 ClampAndScaleUVForPoint(float2 UV)
 {
     return min(UV, 1.0f) * _RTHandleScale.xy;
+}
+
+bool ReplaceDiffuseForReflectionPass(float3 fresnel0)
+{
+    // we want to use Fresnel0 instead diffuse when doing reflection (reflection probe, planar reflection,
+    // DXR reflection). Dieletric are suppose to have a fresnel of around 0.04. Let's consider anything above 0.3 as metal.
+    return (_EnableSpecularLighting.x == 0) && Max3(fresnel0.r, fresnel0.g, fresnel0.b) > 0.3;
 }
 
 // Define Model Matrix Macro

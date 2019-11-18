@@ -32,10 +32,6 @@ namespace UnityEditor.VFX
 
         void SetSettingValue(string name, object value);
 
-        object GetSettingValue(string name);
-
-        VFXSetting GetSetting(string name);
-
         void OnCopyLinksOtherSlot(VFXSlot mySlot, VFXSlot prevOtherSlot, VFXSlot newOtherSlot);
         void OnCopyLinksMySlot(VFXSlot myPrevSlot, VFXSlot myNewSlot, VFXSlot otherSlot);
 
@@ -220,13 +216,13 @@ namespace UnityEditor.VFX
             SyncSlots(VFXSlot.Direction.kOutput, false);
         }
 
-        public override void CollectDependencies(HashSet<ScriptableObject> objs, bool ownedOnly = true)
+        public override void CollectDependencies(HashSet<ScriptableObject> objs)
         {
-            base.CollectDependencies(objs, ownedOnly);
+            base.CollectDependencies(objs);
             foreach (var slot in m_InputSlots.Concat(m_OutputSlots))
             {
                 objs.Add(slot);
-                slot.CollectDependencies(objs, ownedOnly);
+                slot.CollectDependencies(objs);
             }
         }
 
@@ -408,6 +404,11 @@ namespace UnityEditor.VFX
         public bool IsPathExpanded(string fieldPath)
         {
             return m_expandedPaths.Contains(fieldPath);
+        }
+
+        protected override void Invalidate(VFXModel model, InvalidationCause cause)
+        {
+            base.Invalidate(model, cause);
         }
 
         public virtual void UpdateOutputExpressions() {}

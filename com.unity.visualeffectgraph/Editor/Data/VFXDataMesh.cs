@@ -2,83 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEditor.Experimental.VFX;
 using UnityEngine.Experimental.VFX;
-using System.Text;
 
 namespace UnityEditor.VFX
 {
-    class VFXDataMesh : VFXData, ISerializationCallbackReceiver
+    class VFXDataMesh : VFXData
     {
-        [SerializeField, FormerlySerializedAs("shader")]
-        private Shader m_Shader;
+        public Shader shader;
 
-        [SerializeField]
-        private string shaderGUID;
-
-        public Shader shader
-        {
-            get { return m_Shader; }
-            set
-            {
-                m_Shader = value;
-                DestroyCachedMaterial();
-            }
-        }
-
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-            if (m_Shader != null)
-            {
-                string assetPath = AssetDatabase.GetAssetPath(m_Shader);
-                if( ! string.IsNullOrEmpty(assetPath))
-                    shaderGUID = AssetDatabase.AssetPathToGUID(assetPath);
-            }
-            else
-                shaderGUID = null;
-        }
-
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
-        {
-            //Restoration code moved to OnEnable
-        }
-
-        private Material m_CachedMaterial = null; // Transient material used to retrieve key words and properties
-
-        public override VFXDataType type { get { return VFXDataType.Mesh; } }
+        public override VFXDataType type { get { return VFXDataType.kMesh; } }
 
         public override void OnEnable()
         {
             base.OnEnable();
-            if( ! object.ReferenceEquals(shader,null)) // try to get back the correct object from the instance id in case we point on a "null" ScriptableObject which can exists because of reimport.
-                shader = EditorUtility.InstanceIDToObject(shader.GetInstanceID()) as Shader;
-
-            if ( shader == null && !string.IsNullOrEmpty(shaderGUID))
-            {
-                // restore shader from saved GUID in case of loss
-                string assetPath = AssetDatabase.GUIDToAssetPath(shaderGUID);
-                if( !string.IsNullOrEmpty(assetPath))
-                shader = AssetDatabase.LoadAssetAtPath<Shader>(assetPath);
-            }
-
             if (shader == null) shader = VFXResources.defaultResources.shader;
-        }
-
-        public void RefreshShader()
-        {
-            DestroyCachedMaterial();
-            Invalidate(InvalidationCause.kSettingChanged);
-        }
-
-        private void DestroyCachedMaterial()
-        {
-            Material.DestroyImmediate(m_CachedMaterial);
-            m_CachedMaterial = null;
-        }
-
-        public void OnDisable()
-        {
-            DestroyCachedMaterial();
         }
 
         public override void CopySettings<T>(T dst)
@@ -98,27 +36,14 @@ namespace UnityEditor.VFX
             return shader != null && m_Owners.Count == 1;
         }
 
-        public Material GetOrCreateMaterial()
-        {
-            if (m_CachedMaterial == null && shader != null)
-            {
-                m_CachedMaterial = new Material(shader);
-                m_CachedMaterial.hideFlags = HideFlags.HideAndDontSave;
-                VFXLibrary.currentSRPBinder.SetupMaterial(m_CachedMaterial);
-            }
-
-            return m_CachedMaterial;
-        }
-#if ENABLE_RAYTRACING
         public override void FillDescs(
             List<VFXGPUBufferDesc> outBufferDescs,
-            List<VFXTemporaryGPUBufferDesc> outTemporaryBufferDescs,
             List<VFXEditorSystemDesc> outSystemDescs,
             VFXExpressionGraph expressionGraph,
             Dictionary<VFXContext, VFXContextCompiledData> contextToCompiledData,
             Dictionary<VFXContext, int> contextSpawnToBufferIndex,
-            VFXDependentBuffersData dependentBuffers,
-            Dictionary<VFXContext, List<VFXContextLink>[]> effectiveFlowInputLinks)
+            Dictionary<VFXData, int> attributeBuffer,
+            Dictionary<VFXData, int> eventBuffer)
         {
             var context = m_Owners[0];
             var contextData = contextToCompiledData[context];
@@ -131,45 +56,12 @@ namespace UnityEditor.VFX
                     mappings.Add(new VFXMapping(name, exprIndex));
             }
 
-            var paramList = new List<VFXMapping>(contextData.parameters);
-
-            // TODO Remove once material are serialized
-            {
-                var mat = GetOrCreateMaterial();
-                var keywordsStr = new StringBuilder();
-
-                foreach (var k in mat.shaderKeywords)
-                {
-                    keywordsStr.Append(k);
-                    keywordsStr.Append(' ');
-                }
-
-                const int kKeywordID = 0x5a93713b;
-                paramList.Add(new VFXMapping(keywordsStr.ToString(), kKeywordID));
-
-                // Add material properties mappings
-                for (int i = 0; i < ShaderUtil.GetPropertyCount(shader); ++i)
-                {
-                    if (ShaderUtil.IsShaderPropertyHidden(shader, i))
-                    {
-                        var name = ShaderUtil.GetPropertyName(shader, i);
-                        var propExp = contextData.cpuMapper.FromNameAndId(name, -1);
-                        if (propExp != null)
-                        {
-                            int propIndex = expressionGraph.GetFlattenedIndex(propExp);
-                            if (propIndex != -1)
-                                paramList.Add(new VFXMapping(name, propIndex));
-                        }
-                    }
-                }
-            }
-
             var task = new VFXEditorTaskDesc()
             {
                 externalProcessor = shader,
                 values = mappings.ToArray(),
-                parameters = paramList.ToArray(),
-                type = (UnityEngine.VFX.VFXTaskType)VFXTaskType.Output
+                parameters = contextData.parameters,
+                type = VFXTaskType.Output
             };
 
             mappings.Clear();
@@ -199,9 +91,8 @@ namespace UnityEditor.VFX
                 layer = uint.MaxValue,
             });
         }
-#endif
 
-        public override void GenerateAttributeLayout(Dictionary<VFXContext, List<VFXContextLink>[]> effectiveFlowInputLinks)
+        public override void GenerateAttributeLayout()
         {
         }
 

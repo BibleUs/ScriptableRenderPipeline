@@ -1,9 +1,9 @@
 using System;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     [GenerateHLSL]
-    class DiffusionProfileConstants
+    public class DiffusionProfileConstants
     {
         public const int DIFFUSION_PROFILE_COUNT      = 16; // Max. number of profiles, including the slot taken by the neutral profile
         public const int DIFFUSION_PROFILE_NEUTRAL_ID = 0;  // Does not result in blurring
@@ -27,6 +27,8 @@ namespace UnityEngine.Rendering.HighDefinition
             ThinObject = 1
         }
 
+        public string name;
+
         [ColorUsage(false, true)]
         public Color            scatteringDistance;         // Per color channel (no meaningful units)
         [ColorUsage(false, true)]
@@ -47,9 +49,10 @@ namespace UnityEngine.Rendering.HighDefinition
         // Unique hash used in shaders to identify the index in the diffusion profile array
         public uint             hash = 0;
 
-        // Here we need to have one parameter in the diffusion profile parameter because the deserialization call the default constructor
-        public DiffusionProfile(bool dontUseDefaultConstructor)
+        public DiffusionProfile(string name)
         {
+            this.name          = name;
+
             scatteringDistance = Color.grey;
             transmissionTint   = Color.white;
             texturingMode      = TexturingMode.PreAndPostScatter;
@@ -198,7 +201,6 @@ namespace UnityEngine.Rendering.HighDefinition
         }
     }
 
-    [HelpURL(Documentation.baseURL + Documentation.version + Documentation.subURL + "Diffusion-Profile" + Documentation.endURL)]
     public sealed partial class DiffusionProfileSettings : ScriptableObject
     {
         public DiffusionProfile profile;
@@ -210,11 +212,11 @@ namespace UnityEngine.Rendering.HighDefinition
         [NonSerialized] public Vector4 disabledTransmissionTintsAndFresnel0; // RGB = black, A = fresnel0 - For debug to remove the transmission
         [NonSerialized] public Vector4[] filterKernels;             // XY = near field, ZW = far field; 0 = radius, 1 = reciprocal of the PDF
         [NonSerialized] public int updateCount;
-
+        
         void OnEnable()
         {
             if (profile == null)
-                profile = new DiffusionProfile(true);
+                profile = new DiffusionProfile("Diffusion Profile");
 
             profile.Validate();
             UpdateCache();
@@ -222,7 +224,7 @@ namespace UnityEngine.Rendering.HighDefinition
 #if UNITY_EDITOR
             if (m_Version != Version.Last)
                 TryToUpgrade();
-            UnityEditor.Rendering.HighDefinition.DiffusionProfileHashTable.UpdateDiffusionProfileHashNow(this);
+            UnityEditor.Experimental.Rendering.HDPipeline.DiffusionProfileHashTable.UpdateDiffusionProfileHashNow(this);
 #endif
         }
 

@@ -1,4 +1,4 @@
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     /// <summary> Buffers available in HDRP </summary>
     public enum AOVBuffers

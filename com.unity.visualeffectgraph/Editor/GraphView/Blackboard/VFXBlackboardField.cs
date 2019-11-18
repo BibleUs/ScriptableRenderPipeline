@@ -50,14 +50,9 @@ namespace  UnityEditor.VFX.UI
 
         public void SelfChange()
         {
-            if(controller.isOutput)
+            if (controller.exposed)
             {
-                icon = AssetDatabase.LoadAssetAtPath<Texture2D>(VisualEffectGraphPackageInfo.assetPackagePath + "/Editor Default Resources/VFX/output dot.png");
-
-            }
-            else if (controller.exposed)
-            {
-                icon = AssetDatabase.LoadAssetAtPath<Texture2D>(VisualEffectGraphPackageInfo.assetPackagePath + "/Editor Default Resources/VFX/exposed dot.png");
+                icon = Resources.Load<Texture2D>("VFX/exposed dot");
             }
             else
             {

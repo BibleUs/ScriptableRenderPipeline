@@ -5,16 +5,15 @@ using UnityEngine;
 
 namespace UnityEditor.VFX.Block
 {
-    [VFXInfo(category = "Velocity", experimental = true)]
+    [VFXInfo(category = "Velocity")]
     class VelocityDirection : VelocityBase
     {
-        public override string name { get { return string.Format(base.name, "New Direction"); } }
-
+        public override string name { get { return string.Format(base.name, "Direction"); } }
         protected override bool altersDirection { get { return true; } }
 
         public class InputProperties
         {
-            [Tooltip("Sets the direction in which particles should move.")]
+            [Tooltip("The direction of the velocity to add to the particles.")]
             public DirectionType Direction = new DirectionType() { direction = Vector3.forward };
         }
 

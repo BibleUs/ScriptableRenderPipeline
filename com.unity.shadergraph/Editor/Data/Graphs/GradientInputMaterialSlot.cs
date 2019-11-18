@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.Graphing;
 using UnityEditor.ShaderGraph.Drawing.Slots;
-using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.UIElements;
-
 
 namespace UnityEditor.ShaderGraph
 {
@@ -52,14 +50,14 @@ namespace UnityEditor.ShaderGraph
                 throw new Exception(string.Format("Slot {0} either has no owner, or the owner is not a {1}", this, typeof(AbstractMaterialNode)));
 
             if (generationMode.IsPreview())
-                return GradientUtil.GetGradientForPreview(matOwner.GetVariableNameForSlot(id));
+                return GradientUtils.GetGradientForPreview(matOwner.GetVariableNameForSlot(id));
 
             return ConcreteSlotValueAsVariable();
         }
 
         protected override string ConcreteSlotValueAsVariable()
         {
-            return GradientUtil.GetGradientValue(value, "");
+            return GradientUtils.GetGradientValue(value, true, "");
         }
 
         public override void AddDefaultProperty(PropertyCollector properties, GenerationMode generationMode)
@@ -71,7 +69,7 @@ namespace UnityEditor.ShaderGraph
             if (generationMode != GenerationMode.Preview)
                 return;
 
-            GradientUtil.GetGradientPropertiesForPreview(properties, matOwner.GetVariableNameForSlot(id), value);
+            GradientUtils.GetGradientPropertiesForPreview(properties, matOwner.GetVariableNameForSlot(id), value);
         }
 
         public override void GetPreviewProperties(List<PreviewProperty> properties, string name)

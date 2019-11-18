@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityEngine.Experimental.VFX;
 
-interface IGizmoable
+public interface IGizmoable
 {
     string name { get; }
 }

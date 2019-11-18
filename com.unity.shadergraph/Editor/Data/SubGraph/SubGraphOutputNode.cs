@@ -19,8 +19,6 @@ namespace UnityEditor.ShaderGraph
             name = "Output";
         }
 
-        public override string documentationURL => $"{NodeUtils.docURL}Sub-graph.md";
-
         void ValidateShaderStage()
             {
                 List<MaterialSlot> slots = new List<MaterialSlot>();

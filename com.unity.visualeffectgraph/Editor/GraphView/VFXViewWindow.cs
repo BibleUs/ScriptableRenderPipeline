@@ -5,13 +5,13 @@ using UnityEditor.UIElements;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Experimental.VFX;
-using UnityEditor.VFX;
+using UnityEditor.Experimental.VFX;
 using UnityEngine.UIElements;
+using UnityEditor.VFX;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityObject = UnityEngine.Object;
 using System.IO;
-using UnityEditor.VersionControl;
 
 namespace  UnityEditor.VFX.UI
 {
@@ -29,19 +29,18 @@ namespace  UnityEditor.VFX.UI
                     {Event.KeyboardEvent("o"), view.FrameOrigin },
                     {Event.KeyboardEvent("^#>"), view.FramePrev },
                     {Event.KeyboardEvent("^>"), view.FrameNext },
+                    {Event.KeyboardEvent("#^r"), view.Resync},
                     {Event.KeyboardEvent("F7"), view.Compile},
                     {Event.KeyboardEvent("#d"), view.OutputToDot},
                     {Event.KeyboardEvent("^#d"), view.OutputToDotReduced},
                     {Event.KeyboardEvent("#c"), view.OutputToDotConstantFolding},
                     {Event.KeyboardEvent("^r"), view.ReinitComponents},
                     {Event.KeyboardEvent("F5"), view.ReinitComponents},
-                    {Event.KeyboardEvent("#^r"), view.ReinitAndPlayComponents},
-                    {Event.KeyboardEvent("#F5"), view.ReinitAndPlayComponents},
                 });
         }
 
         public static VFXViewWindow currentWindow;
-
+        
         [MenuItem("Window/Visual Effects/Visual Effect Graph",false,3011)]
         public static void ShowWindow()
         {
@@ -55,7 +54,7 @@ namespace  UnityEditor.VFX.UI
         public void LoadAsset(VisualEffectAsset asset, VisualEffect effectToAttach)
         {
             string assetPath = AssetDatabase.GetAssetPath(asset);
-#if ENABLE_RAYTRACING
+
             VisualEffectResource resource = VisualEffectResource.GetResourceAtPath(assetPath);
 
             //Transitionning code
@@ -66,49 +65,24 @@ namespace  UnityEditor.VFX.UI
             }
 
             LoadResource(resource, effectToAttach);
-#endif
         }
-#if ENABLE_RAYTRACING
+
         public void LoadResource(VisualEffectResource resource, VisualEffect effectToAttach = null)
         {
-            m_ResourceHistory.Clear();
             if (graphView.controller == null || graphView.controller.model != resource)
             {
-                InternalLoadResource(resource);
+                bool differentAsset = resource != m_DisplayedResource;
+
+                m_DisplayedResource = resource;
+                graphView.controller = VFXViewController.GetController(resource, true);
+                graphView.UpdateGlobalSelection();
+                if (differentAsset)
+                {
+                    graphView.FrameNewController();
+                }
             }
             if (effectToAttach != null && graphView.controller != null && graphView.controller.model != null && effectToAttach.visualEffectAsset == graphView.controller.model.asset)
                 graphView.attachedComponent = effectToAttach;
-        }
-
-        List<VisualEffectResource> m_ResourceHistory = new List<VisualEffectResource>();
-
-        public IEnumerable<VisualEffectResource> resourceHistory
-        {
-            get { return m_ResourceHistory; }
-        }
-
-        public void PushResource(VisualEffectResource resource)
-        {
-            if (graphView.controller == null || graphView.controller.model != resource)
-            {
-                m_ResourceHistory.Add(m_DisplayedResource);
-                InternalLoadResource(resource);
-            }
-        }
-
-        void InternalLoadResource(VisualEffectResource resource)
-        {
-            m_DisplayedResource = resource;
-            graphView.controller = VFXViewController.GetController(resource, true);
-            graphView.UpdateGlobalSelection();
-            graphView.FrameNewController();
-        }
-
-        public void PopResource()
-        {
-            InternalLoadResource(m_ResourceHistory.Last());
-
-            m_ResourceHistory.RemoveAt(m_ResourceHistory.Count-1);
         }
 
         protected VisualEffectResource GetCurrentResource()
@@ -135,7 +109,7 @@ namespace  UnityEditor.VFX.UI
                 if (instanceID != 0)
                 {
                     string path = AssetDatabase.GetAssetPath(instanceID);
-                    if (path.EndsWith(VisualEffectResource.Extension))
+                    if (path.EndsWith(".vfx"))
                     {
                         selectedResource = VisualEffectResource.GetResourceAtPath(path);
                     }
@@ -147,7 +121,7 @@ namespace  UnityEditor.VFX.UI
             }
             return selectedResource;
         }
-#endif
+
         Action m_OnUpdateAction;
 
         protected void OnEnable()
@@ -159,7 +133,7 @@ namespace  UnityEditor.VFX.UI
             SetupFramingShortcutHandler(graphView);
 
             rootVisualElement.Add(graphView);
-#if ENABLE_RAYTRACING
+
             // make sure we don't do something that might touch the model on the view OnEnable because
             // the models OnEnable might be called after in the case of a domain reload.
             m_OnUpdateAction = () =>
@@ -170,7 +144,6 @@ namespace  UnityEditor.VFX.UI
                     LoadResource(currentAsset);
                 }
             };
-#endif
 
             autoCompile = true;
 
@@ -199,7 +172,7 @@ namespace  UnityEditor.VFX.UI
 
 #endif
 
-        protected void OnDestroy()
+        protected void OnDisable()
         {
 #if USE_EXIT_WORKAROUND_FOGBUGZ_1062258
             EditorApplication.wantsToQuit -= Quitting_Workaround;
@@ -224,14 +197,7 @@ namespace  UnityEditor.VFX.UI
             rootVisualElement.RemoveManipulator(m_ShortcutHandler);
         }
 
-        void OnFocus()
-        {
-            graphView.OnFocus();
-        }
-
         public bool autoCompile {get; set; }
-
-        public bool autoCompileDependent { get; set; }
 
         void Update()
         {
@@ -261,36 +227,15 @@ namespace  UnityEditor.VFX.UI
                         }
 
 
-                        graph.RecompileIfNeeded(!autoCompile,!autoCompileDependent);
+                        graph.RecompileIfNeeded(!autoCompile);
                         controller.RecompileExpressionGraphIfNeeded();
                     }
                 }
             }
-
-            if( VFXViewModicationProcessor.assetMoved)
-            {
-                graphView.AssetMoved();
-                VFXViewModicationProcessor.assetMoved = false;
-            }
             titleContent.text = filename;
-
-            if (graphView?.controller?.model?.visualEffectObject != null)
-            {
-                graphView.checkoutButton.visible = true;
-                if (!AssetDatabase.IsOpenForEdit(graphView.controller.model.visualEffectObject,
-                    StatusQueryOptions.UseCachedIfPossible) && Provider.isActive && Provider.enabled)
-                {
-                    graphView.checkoutButton.SetEnabled(true);
-                }
-                else
-                {
-                    graphView.checkoutButton.SetEnabled(false);
-                }
-            }
         }
-#if ENABLE_RAYTRACING
+
         [SerializeField]
         private VisualEffectResource m_DisplayedResource;
-#endif
     }
 }

@@ -1,11 +1,14 @@
+using System;
+using UnityEditor.Rendering;
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Experimental.Rendering.HDPipeline;
+using UnityEngine.Rendering;
 
-namespace UnityEditor.Rendering.HighDefinition
+namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
     [CanEditMultipleObjects]
     [VolumeComponentEditor(typeof(HDShadowSettings))]
-    class HDShadowSettingsEditor : VolumeComponentEditor
+    public class HDShadowSettingsEditor : VolumeComponentEditor
     {
         SerializedDataParameter m_MaxShadowDistance;
 

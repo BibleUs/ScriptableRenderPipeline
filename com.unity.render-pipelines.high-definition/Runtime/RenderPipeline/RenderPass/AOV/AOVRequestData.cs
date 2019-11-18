@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
-using UnityEngine.Experimental.Rendering.RenderGraphModule;
+using UnityEngine.Rendering;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     /// <summary>Called when the rendering has completed.</summary>
     /// <param name="cmd">A command buffer that can be used.</param>
     /// <param name="buffers">The buffers that has been requested.</param>
     /// <param name="outputProperties">Several properties that were computed for this frame.</param>
-    public delegate void FramePassCallback(CommandBuffer cmd, List<RTHandle> buffers, RenderOutputProperties outputProperties);
-    public delegate RTHandle AOVRequestBufferAllocator(AOVBuffers aovBufferId);
+    public delegate void FramePassCallback(CommandBuffer cmd, List<RTHandleSystem.RTHandle> buffers, RenderOutputProperties outputProperties);
+    public delegate RTHandleSystem.RTHandle AOVRequestBufferAllocator(AOVBuffers aovBufferId);
 
     /// <summary>Describes a frame pass.</summary>
     public struct AOVRequestData
@@ -55,7 +55,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         /// <summary>Allocate texture if required.</summary>
         /// <param name="textures">A buffer of texture ready to use.</param>
-        public void AllocateTargetTexturesIfRequired(ref List<RTHandle> textures)
+        public void AllocateTargetTexturesIfRequired(ref List<RTHandleSystem.RTHandle> textures)
         {
             if (!isValid || textures == null)
                 return;
@@ -74,12 +74,12 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <param name="camera">The camera associated with the source texture.</param>
         /// <param name="source">The source texture to copy</param>
         /// <param name="targets">The target texture buffer.</param>
-        internal void PushCameraTexture(
+        public void PushCameraTexture(
             CommandBuffer cmd,
             AOVBuffers aovBufferId,
             HDCamera camera,
-            RTHandle source,
-            List<RTHandle> targets
+            RTHandleSystem.RTHandle source,
+            List<RTHandleSystem.RTHandle> targets
         )
         {
             if (!isValid)
@@ -95,51 +95,11 @@ namespace UnityEngine.Rendering.HighDefinition
             HDUtils.BlitCameraTexture(cmd, source, targets[index]);
         }
 
-        class PushCameraTexturePassData
-        {
-            public int                  requestIndex;
-            public RenderGraphResource  source;
-            // Not super clean to not use RenderGraphResources here. In practice it's ok because those texture are never passed back to any other render pass.
-            public List<RTHandle>       targets;
-        }
-
-        internal void PushCameraTexture(
-            RenderGraph         renderGraph,
-            AOVBuffers          aovBufferId,
-            HDCamera            camera,
-            RenderGraphResource source,
-            List<RTHandle>      targets
-        )
-        {
-            if (!isValid)
-                return;
-
-            Assert.IsNotNull(m_RequestedAOVBuffers);
-            Assert.IsNotNull(targets);
-
-            var index = Array.IndexOf(m_RequestedAOVBuffers, aovBufferId);
-            if (index == -1)
-                return;
-
-            using (var builder = renderGraph.AddRenderPass<PushCameraTexturePassData>("Push AOV Camera Texture", out var passData))
-            {
-                passData.requestIndex = index;
-                passData.source = builder.ReadTexture(source);
-                passData.targets = targets;
-
-                builder.SetRenderFunc(
-                (PushCameraTexturePassData data, RenderGraphContext ctx) =>
-                {
-                    HDUtils.BlitCameraTexture(ctx.cmd, ctx.resources.GetTexture(data.source), data.targets[data.requestIndex]);
-                });
-            }
-        }
-
         /// <summary>Execute the frame pass callback. It assumes that the textures are properly initialized and filled.</summary>
         /// <param name="cmd">The command buffer to use.</param>
         /// <param name="framePassTextures">The textures to use.</param>
         /// <param name="outputProperties">The properties computed for this frame.</param>
-        public void Execute(CommandBuffer cmd, List<RTHandle> framePassTextures, RenderOutputProperties outputProperties)
+        public void Execute(CommandBuffer cmd, List<RTHandleSystem.RTHandle> framePassTextures, RenderOutputProperties outputProperties)
         {
             if (!isValid)
                 return;

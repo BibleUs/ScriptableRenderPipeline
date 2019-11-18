@@ -1,7 +1,11 @@
 using System;
-using UnityEngine.Rendering.HighDefinition.Attributes;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Experimental.Rendering.HDPipeline.Attributes;
+using static UnityEngine.Experimental.Rendering.HDPipeline.MaterialDebugSettings;
 
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     /// <summary>Engine lighting property.</summary>
     [Flags]

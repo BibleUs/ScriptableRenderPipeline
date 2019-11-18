@@ -4,39 +4,23 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [7.1.5] - 2019-11-15
+## [7.0.0] - 2019-XX-XX
+### Added
+- Added a menu option to create a new `ScriptableRendererFeature` script. To do so in the Editor, click on Asset > Create > Rendering > Lightweight Render Pipeline > Renderer Feature.
+- Added documentation for SpeedTree Shaders in LWRP.
 
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.1.4] - 2019-11-13
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.1.3] - 2019-11-04
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.1.2] - 2019-09-19
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.1.1] - 2019-09-05
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.0.1] - 2019-07-25
-
-Version Updated
-The version number for this package has increased due to a version update of a related graphics package.
-
-## [7.0.0] - 2019-07-17
 ### Changed
-- LWRP is being deprecated in favour of Universal Render Pipeline. See the changelog for the UniversalRP Package.
+- Replaced beginCameraRendering callbacks by non obsolete implementation in Light2D
+- Updated `ScriptableRendererFeature` and `ScriptableRenderPass` API docs.
+
+### Fixed
+- Fixed a case where built-in Shader time values could be out of sync with actual time. [case 1142495](https://fogbugz.unity3d.com/f/cases/1142495/)
+- Fixed an issue that caused forward renderer resources to not load properly when you upgraded LWRP from an older version to 7.0.0. [case 1154925](https://issuetracker.unity3d.com/issues/lwrp-upgrading-lwrp-package-to-7-dot-0-0-breaks-forwardrenderdata-asset-in-resource-files)
+- Fixed GC spikes caused by LWRP allocating heap memory every frame.
+- Fixed NullReference exception caused when trying to add a ScriptableRendererFeature.
+- Added missing page for 2D Lights in LWRP.
+
+
 
 ## [6.7.0] - 2019-05-16
 ### Added

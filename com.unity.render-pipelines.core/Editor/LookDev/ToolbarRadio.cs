@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Rendering.LookDev
 {
-    class ToolbarRadio : Toolbar, INotifyValueChanged<int>
+    public class ToolbarRadio : Toolbar, INotifyValueChanged<int>
     {
         public new class UxmlFactory : UxmlFactory<ToolbarRadio, UxmlTraits> { }
         public new class UxmlTraits : Button.UxmlTraits { }
@@ -13,8 +13,6 @@ namespace UnityEditor.Rendering.LookDev
         List<ToolbarToggle> radios = new List<ToolbarToggle>();
 
         public new static readonly string ussClassName = "unity-toolbar-radio";
-
-        bool m_CanDeselectAll = false;
 
         public int radioLength { get; private set; } = 0;
 
@@ -43,25 +41,17 @@ namespace UnityEditor.Rendering.LookDev
             }
         }
 
-        public ToolbarRadio() : this(null, false) { }
-
-        public ToolbarRadio(string label = null, bool canDeselectAll = false)
+        public ToolbarRadio()
         {
             RemoveFromClassList(Toolbar.ussClassName);
             AddToClassList(ussClassName);
-
-            m_CanDeselectAll = canDeselectAll;
-            if (m_CanDeselectAll)
-                m_Value = -1;
-            if (label != null)
-                Add(new Label() { text = label });
         }
 
         public void AddRadio(string text = null, Texture2D icon = null)
         {
             var toggle = new ToolbarToggle();
             toggle.RegisterValueChangedCallback(InnerValueChanged(radioLength));
-            toggle.SetValueWithoutNotify(radioLength == (m_CanDeselectAll ? -1 : 0));
+            toggle.SetValueWithoutNotify(radioLength == 0);
             radios.Add(toggle);
             if (icon != null)
             {
@@ -73,8 +63,6 @@ namespace UnityEditor.Rendering.LookDev
             else
                 toggle.text = text;
             Add(toggle);
-            if (radioLength == 0)
-                toggle.style.borderLeftWidth = 1;
             radioLength++;
         }
 
@@ -102,10 +90,8 @@ namespace UnityEditor.Rendering.LookDev
             {
                 if (radioIndex == m_Value)
                 {
-                    if (!evt.newValue && !m_CanDeselectAll)
+                    if (!evt.newValue)
                         radios[radioIndex].SetValueWithoutNotify(true);
-                    else
-                        value = -1;
                 }
                 else
                     value = radioIndex;
@@ -116,23 +102,13 @@ namespace UnityEditor.Rendering.LookDev
         {
             if (m_Value != newValue)
             {
-                if (newValue < (m_CanDeselectAll ? -1 : 0) || newValue >= radioLength)
+                if (newValue < 0 || newValue >= radioLength)
                     throw new System.IndexOutOfRangeException();
 
-                if (m_Value == newValue && m_CanDeselectAll)
-                {
-                    if (m_Value > -1)
-                        radios[m_Value].SetValueWithoutNotify(false);
-                    m_Value = -1;
-                }
-                else
-                {
-                    if (m_Value > -1)
-                        radios[m_Value].SetValueWithoutNotify(false);
-                    if (newValue > -1)
-                        radios[newValue].SetValueWithoutNotify(true);
-                    m_Value = newValue;
-                }
+                radios[m_Value].SetValueWithoutNotify(false);
+                radios[newValue].SetValueWithoutNotify(true);
+
+                m_Value = newValue;
             }
         }
     }

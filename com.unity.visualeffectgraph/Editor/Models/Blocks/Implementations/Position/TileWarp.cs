@@ -12,13 +12,13 @@ namespace UnityEditor.VFX.Block
     {
         public class InputProperties
         {
-            [Tooltip("Sets the volume which will contain the tiled/warped particles. Particles which exit the volume from one side will reappear on the opposite side.")]
+            [Tooltip("Volume that will contain the tiled/warped particles")]
             public AABox Volume = AABox.defaultValue;
         }
 
         public override string name { get { return "Tile/Warp Positions"; } }
-        public override VFXContextType compatibleContexts { get { return VFXContextType.UpdateAndOutput; } }
-        public override VFXDataType compatibleData { get { return VFXDataType.Particle; } }
+        public override VFXContextType compatibleContexts { get { return VFXContextType.kUpdateAndOutput; } }
+        public override VFXDataType compatibleData { get { return VFXDataType.kParticle; } }
         public override IEnumerable<VFXAttributeInfo> attributes
         {
             get

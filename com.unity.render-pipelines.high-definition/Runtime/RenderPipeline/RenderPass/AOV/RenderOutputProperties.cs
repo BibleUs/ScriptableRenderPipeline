@@ -1,4 +1,4 @@
-namespace UnityEngine.Rendering.HighDefinition
+namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     /// <summary>Properties computed during a frame rendering.</summary>
     public struct RenderOutputProperties
@@ -23,7 +23,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         /// <summary>Creates a new FrameProperties from an <see cref="HDCamera"/>.</summary>
         /// <param name="hdCamera">The camera to use.</param>
-        internal static RenderOutputProperties From(HDCamera hdCamera)
+        public static RenderOutputProperties From(HDCamera hdCamera)
             => new RenderOutputProperties(
                 new Vector2Int(hdCamera.actualWidth, hdCamera.actualHeight),
                 hdCamera.camera.cameraToWorldMatrix,

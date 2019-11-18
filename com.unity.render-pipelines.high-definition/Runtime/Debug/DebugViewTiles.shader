@@ -19,7 +19,6 @@ Shader "Hidden/HDRP/DebugViewTiles"
 
             #pragma multi_compile USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
             #pragma multi_compile SHOW_LIGHT_CATEGORIES SHOW_FEATURE_VARIANTS
-            #pragma multi_compile _ IS_DRAWINSTANCEDINDIRECT
 
             //-------------------------------------------------------------------------------------
             // Include
@@ -49,15 +48,6 @@ Shader "Hidden/HDRP/DebugViewTiles"
             StructuredBuffer<uint> g_TileList;
             Buffer<uint> g_DispatchIndirectBuffer;
 
-            uint GetDispatchIndirectCount(uint variant)
-            {
-#if IS_DRAWINSTANCEDINDIRECT
-                return g_DispatchIndirectBuffer[variant * 4 + 1];
-#else
-                return g_DispatchIndirectBuffer[variant * 3 + 0] / 4; // 4 8x8 groups per tile
-#endif
-            }
-
             struct Attributes
             {
                 uint vertexID : SV_VertexID;
@@ -83,9 +73,9 @@ Shader "Hidden/HDRP/DebugViewTiles"
                 uint2 tileSize = GetTileSize();
 
                 uint variant = 0;
-                while (quadIndex >= GetDispatchIndirectCount(variant) && variant < NUM_FEATURE_VARIANTS) // 4 group 8x8 per tile.
+                while (quadIndex >= g_DispatchIndirectBuffer[variant * 3 + 0] && variant < NUM_FEATURE_VARIANTS)
                 {
-                    quadIndex -= GetDispatchIndirectCount(variant);
+                    quadIndex -= g_DispatchIndirectBuffer[variant * 3 + 0];
                     variant++;
                 }
 
@@ -94,7 +84,7 @@ Shader "Hidden/HDRP/DebugViewTiles"
                 uint2 pixelCoord = (tileCoord + uint2((quadVertex+1) & 1, (quadVertex >> 1) & 1)) * tileSize;
 
 #if defined(UNITY_STEREO_INSTANCING_ENABLED)
-                // With XR single-pass, all tiles from the indirect buffer are processed so we need to discard them if they don't match the current eye index
+                // With instancing, all tiles from the indirect buffer are processed so we need to discard them if they don't match the current eye index
                 uint tile_StereoEyeIndex = tileIndex >> TILE_INDEX_SHIFT_EYE;
                 if (unity_StereoEyeIndex != tile_StereoEyeIndex)
                     variant = -1;

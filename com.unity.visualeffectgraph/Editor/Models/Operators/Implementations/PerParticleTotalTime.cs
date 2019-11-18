@@ -8,7 +8,6 @@ namespace UnityEditor.VFX.Operator
     {
         public class OutputProperties
         {
-            [Tooltip("Outputs the delta time with a random per-particle offset. This is useful for preventing particles in fast simulations from receiving similar attributes when they share the same delta time.")]
             public float t = 0;
         }
 
@@ -24,7 +23,7 @@ namespace UnityEditor.VFX.Operator
         {
             VFXExpression[] output = new VFXExpression[]
             {
-                VFXBuiltInExpression.TotalTime + (VFXBuiltInExpression.DeltaTime * VFXOperatorUtility.FixedRandom(0xc43388e9, VFXSeedMode.PerParticle)),
+                VFXBuiltInExpression.TotalTime + (VFXBuiltInExpression.DeltaTime * VFXOperatorUtility.FixedRandom(0xc43388e9, true)),
             };
             return output;
         }

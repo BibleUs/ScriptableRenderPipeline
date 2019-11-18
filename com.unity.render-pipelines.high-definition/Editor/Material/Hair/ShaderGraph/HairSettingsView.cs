@@ -6,16 +6,16 @@ using UnityEditor.Graphing.Util;
 using UnityEditor.ShaderGraph;
 using UnityEditor.ShaderGraph.Drawing;
 using UnityEditor.ShaderGraph.Drawing.Controls;
-using UnityEngine.Rendering.HighDefinition;
-using UnityEngine.Rendering;
+using UnityEditor.Experimental.Rendering.HDPipeline;
+using UnityEngine.Experimental.Rendering.HDPipeline;
 
-namespace UnityEditor.Rendering.HighDefinition.Drawing
+namespace UnityEditor.Experimental.Rendering.HDPipeline.Drawing
 {
     class HairSettingsView : VisualElement
     {
         HairMasterNode m_Node;
 
-        IntegerField m_SortPriorityField;
+        IntegerField m_SortPiorityField;
 
         Label CreateLabel(string text, int indentLevel)
         {
@@ -55,10 +55,10 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
                     });
                 });
 
-                m_SortPriorityField = new IntegerField();
+                m_SortPiorityField = new IntegerField();
                 ps.Add(new PropertyRow(CreateLabel("Sorting Priority", indentLevel)), (row) =>
                 {
-                    row.Add(m_SortPriorityField, (field) =>
+                    row.Add(m_SortPiorityField, (field) =>
                     {
                         field.value = m_Node.sortPriority;
                         field.RegisterValueChangedCallback(ChangeSortPriority);
@@ -107,36 +107,6 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
                     {
                         toggle.value = m_Node.transparentWritesMotionVec.isOn;
                         toggle.OnToggleChanged(ChangeTransparentWritesMotionVec);
-                    });
-                });
-
-                ps.Add(new PropertyRow(CreateLabel("ZWrite", indentLevel)), (row) =>
-                {
-                    row.Add(new Toggle(), (toggle) =>
-                    {
-                        toggle.value = m_Node.zWrite.isOn;
-                        toggle.OnToggleChanged(ChangeZWrite);
-                    });
-                });
-
-                if (m_Node.doubleSidedMode == DoubleSidedMode.Disabled)
-                {
-                    ps.Add(new PropertyRow(CreateLabel("Cull Mode", indentLevel)), (row) =>
-                    {
-                        row.Add(new EnumField(m_Node.transparentCullMode), (e) =>
-                        {
-                            e.value = m_Node.transparentCullMode;
-                            e.RegisterValueChangedCallback(ChangeTransparentCullMode);
-                        });
-                    });
-                }
-
-                ps.Add(new PropertyRow(CreateLabel("Z Test", indentLevel)), (row) =>
-                {
-                    row.Add(new EnumField(m_Node.zTest), (e) =>
-                    {
-                        e.value = m_Node.zTest;
-                        e.RegisterValueChangedCallback(ChangeZTest);
                     });
                 });
 
@@ -193,15 +163,6 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
                 });
             });
 
-            ps.Add(new PropertyRow(CreateLabel("Add Precomputed Velocity", indentLevel)), (row) =>
-            {
-                row.Add(new Toggle(), (toggle) =>
-                {
-                    toggle.value = m_Node.addPrecomputedVelocity.isOn;
-                    toggle.OnToggleChanged(ChangeAddPrecomputedVelocity);
-                });
-            });
-
             ps.Add(new PropertyRow(CreateLabel("Geometric Specular AA", indentLevel)), (row) =>
             {
                 row.Add(new Toggle(), (toggle) =>
@@ -244,15 +205,6 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
                 {
                     toggle.value = m_Node.useLightFacingNormal.isOn;
                     toggle.OnToggleChanged(ChangeUseLightFacingNormal);
-                });
-            });
-
-            ps.Add(new PropertyRow(CreateLabel("Support LOD CrossFade", indentLevel)), (row) =>
-            {
-                row.Add(new Toggle(), (toggle) =>
-                {
-                    toggle.value = m_Node.supportLodCrossFade.isOn;
-                    toggle.OnToggleChanged(ChangeSupportLODCrossFade);
                 });
             });
 
@@ -317,7 +269,7 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
         {
             m_Node.sortPriority = HDRenderQueue.ClampsTransparentRangePriority(evt.newValue);
             // Force the text to match.
-            m_SortPriorityField.value = m_Node.sortPriority;
+            m_SortPiorityField.value = m_Node.sortPriority;
             if (Equals(m_Node.sortPriority, evt.newValue))
                 return;
 
@@ -380,14 +332,6 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
             m_Node.receiveSSR = td;
         }
 
-        void ChangeAddPrecomputedVelocity(ChangeEvent<bool> evt)
-        {
-            m_Node.owner.owner.RegisterCompleteObjectUndo("Add Precomputed Velocity");
-            ToggleData td = m_Node.addPrecomputedVelocity;
-            td.isOn = evt.newValue;
-            m_Node.addPrecomputedVelocity = td;
-        }
-
         void ChangeUseLightFacingNormal(ChangeEvent<bool> evt)
         {
             m_Node.owner.owner.RegisterCompleteObjectUndo("Use Light Facing Normal Change");
@@ -420,47 +364,13 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
             td.isOn = evt.newValue;
             m_Node.overrideBakedGI = td;
         }
-
+        
         void ChangeDepthOffset(ChangeEvent<bool> evt)
         {
             m_Node.owner.owner.RegisterCompleteObjectUndo("DepthOffset Change");
             ToggleData td = m_Node.depthOffset;
             td.isOn = evt.newValue;
             m_Node.depthOffset = td;
-        }
-
-        void ChangeZWrite(ChangeEvent<bool> evt)
-        {
-            m_Node.owner.owner.RegisterCompleteObjectUndo("ZWrite Change");
-            ToggleData td = m_Node.zWrite;
-            td.isOn = evt.newValue;
-            m_Node.zWrite = td;
-        }
-
-        void ChangeTransparentCullMode(ChangeEvent<Enum> evt)
-        {
-            if (Equals(m_Node.transparentCullMode, evt.newValue))
-                return;
-
-            m_Node.owner.owner.RegisterCompleteObjectUndo("Transparent Cull Mode Change");
-            m_Node.transparentCullMode = (TransparentCullMode)evt.newValue;
-        }
-
-        void ChangeZTest(ChangeEvent<Enum> evt)
-        {
-            if (Equals(m_Node.zTest, evt.newValue))
-                return;
-
-            m_Node.owner.owner.RegisterCompleteObjectUndo("ZTest Change");
-            m_Node.zTest = (CompareFunction)evt.newValue;
-        }
-
-        void ChangeSupportLODCrossFade(ChangeEvent<bool> evt)
-        {
-            m_Node.owner.owner.RegisterCompleteObjectUndo("Support LOD CrossFade Change");
-            ToggleData td = m_Node.supportLodCrossFade;
-            td.isOn = evt.newValue;
-            m_Node.supportLodCrossFade = td;
         }
 
         public AlphaMode GetAlphaMode(HairMasterNode.AlphaModeLit alphaModeLit)

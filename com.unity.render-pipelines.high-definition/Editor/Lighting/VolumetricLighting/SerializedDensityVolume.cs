@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace UnityEditor.Rendering.HighDefinition
+namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
     class SerializedDensityVolume
     {
@@ -41,7 +41,7 @@ namespace UnityEditor.Rendering.HighDefinition
             textureTile = densityParams.FindPropertyRelative("textureTiling");
 
             size = densityParams.FindPropertyRelative("size");
-
+            
             positiveFade = densityParams.FindPropertyRelative("positiveFade");
             negativeFade = densityParams.FindPropertyRelative("negativeFade");
 

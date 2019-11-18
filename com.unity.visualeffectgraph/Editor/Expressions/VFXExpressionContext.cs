@@ -9,7 +9,7 @@ using UnityEngine.Experimental.VFX;
 namespace UnityEditor.VFX
 {
     [Flags]
-    enum VFXExpressionContextOption
+    public enum VFXExpressionContextOption
     {
         None = 0,
         Reduction = 1 << 0,

@@ -207,7 +207,7 @@ namespace UnityEditor.ShaderGraph.Drawing
             }
         }
 
-        public bool HandleGraphChanges()
+        public void HandleGraphChanges()
         {
             if (m_Graph.didActiveOutputNodeChange)
             {
@@ -248,8 +248,6 @@ namespace UnityEditor.ShaderGraph.Drawing
                     m_RefreshTimedNodes = true;
                 }
             }
-
-            return m_NodesToUpdate.Count > 0;
         }
 
         List<PreviewProperty> m_PreviewProperties = new List<PreviewProperty>();
@@ -286,18 +284,19 @@ namespace UnityEditor.ShaderGraph.Drawing
             PropagateNodeList(m_NodesToDraw, PropagationDirection.Downstream);
             m_NodesToDraw.UnionWith(m_TimedNodes);
 
-            var time = Time.realtimeSinceStartup;
-            var timeParameters = new Vector4(time, Mathf.Sin(time), Mathf.Cos(time), 0.0f);
-
             foreach (var node in m_NodesToDraw)
             {
                 if(node == null || !node.hasPreview || !node.previewExpanded)
                     continue;
 
                 var renderData = GetRenderData(node.tempId);
+                renderData.previewMode = PreviewMode.Preview3D;
+                if (node.previewMode == PreviewMode.Preview2D)
+                {
+                    renderData.previewMode = PreviewMode.Preview2D;
+                }
 
                 CollectShaderProperties(node, renderData);
-                renderData.shaderData.mat.SetVector("_TimeParameters", timeParameters);
 
                 if (renderData.shaderData.shader == null)
                 {
@@ -318,6 +317,7 @@ namespace UnityEditor.ShaderGraph.Drawing
                     m_RenderList3D.Add(renderData);
             }
 
+            var time = Time.realtimeSinceStartup;
             EditorUtility.SetCameraAnimateMaterialsTime(m_SceneResources.camera, time);
 
             m_SceneResources.light0.enabled = true;
@@ -398,23 +398,9 @@ namespace UnityEditor.ShaderGraph.Drawing
             // Check for shaders that finished compiling and set them to redraw
             foreach (var renderData in m_RenderDatas)
             {
-                if (renderData != null && renderData.shaderData.isCompiling)
+                if (renderData != null && renderData.shaderData.isCompiling &&
+                    ShaderUtil.IsPassCompiled(renderData.shaderData.mat, 0))
                 {
-                    var isCompiled = true;
-                    for (var i = 0; i < renderData.shaderData.mat.passCount; i++)
-                    {
-                        if (!ShaderUtil.IsPassCompiled(renderData.shaderData.mat, i))
-                        {
-                            isCompiled = false;
-                            break;
-                        }
-                    }
-
-                    if (!isCompiled)
-                {
-                        continue;
-                    }
-
                     renderData.shaderData.isCompiling = false;
                     CheckForErrors(renderData.shaderData);
                     m_NodesToDraw.Add(renderData.shaderData.node);
@@ -435,13 +421,13 @@ namespace UnityEditor.ShaderGraph.Drawing
 
             foreach (var node in m_NodesToUpdate)
             {
-                if (node is IMasterNode && node == masterRenderData.shaderData.node && !(node is VfxMasterNode))
+                if (node is IMasterNode && node == masterRenderData.shaderData.node)
                 {
                     UpdateMasterNodeShader();
                     continue;
                 }
 
-                if (!node.hasPreview && !(node is SubGraphOutputNode || node is VfxMasterNode))
+                if (!node.hasPreview && !(node is SubGraphOutputNode))
                     continue;
 
                 var results = m_Graph.GetPreviewShader(node);
@@ -452,25 +438,19 @@ namespace UnityEditor.ShaderGraph.Drawing
                     continue;
                 }
                 ShaderUtil.ClearCachedData(renderData.shaderData.shader);
-                
-                BeginCompile(renderData, results.shader);
-                //get the preview mode from generated results
-                renderData.previewMode = results.previewMode;
+                // Always explicitly use pass 0 for preview shaders
+                BeginCompile(renderData, results.shader, 0);
             }
 
             ShaderUtil.allowAsyncCompilation = wasAsyncAllowed;
             m_NodesToUpdate.Clear();
         }
 
-        void BeginCompile(PreviewRenderData renderData, string shaderStr)
+        void BeginCompile(PreviewRenderData renderData, string shaderStr, int shaderPass)
         {
             var shaderData = renderData.shaderData;
-            ShaderUtil.ClearCachedData(shaderData.shader);
             ShaderUtil.UpdateShaderAsset(shaderData.shader, shaderStr, false);
-            for (var i = 0; i < shaderData.mat.passCount; i++)
-            {
-                ShaderUtil.CompilePass(shaderData.mat, i);
-            }
+            ShaderUtil.CompilePass(shaderData.mat, shaderPass);
             shaderData.isCompiling = true;
             renderData.NotifyPreviewChanged();
         }
@@ -569,7 +549,7 @@ namespace UnityEditor.ShaderGraph.Drawing
                 ShaderUtil.ClearCachedData(shaderData.shader);
             }
 
-            BeginCompile(masterRenderData, shaderData.shaderString);
+            BeginCompile(masterRenderData, shaderData.shaderString, masterNode.GetActiveSubShader()?.GetPreviewPassIndex() ?? 0);
         }
 
         void DestroyRenderData(PreviewRenderData renderData)

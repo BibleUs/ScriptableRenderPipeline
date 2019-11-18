@@ -5,59 +5,35 @@
 ${VFXPerPassInclude}
 ${VFXGeneratedBlockFunction}
 
-struct vs_input
-{
-	VFX_DECLARE_INSTANCE_ID
-};
-
 #pragma vertex vert
-float4 ClipOnNearPlane(float4 pos, float4 other)
-{
-	if (pos.w >= _ProjectionParams.y || other.w < _ProjectionParams.y)
-		return pos;
-		
-	// Project on near plane
-	float ratio = (_ProjectionParams.y - pos.w) / (other.w - pos.w);
-	return pos + (other - pos) * ratio;
-}
 
-VFX_VARYING_PS_INPUTS vert(uint id : SV_VertexID, vs_input i)
+VFX_VARYING_PS_INPUTS vert(uint id : SV_VertexID, uint instanceID : SV_InstanceID)
 {
+	uint index = (id >> 2) + instanceID * 2048;
 	VFX_VARYING_PS_INPUTS o = (VFX_VARYING_PS_INPUTS)0;
-
-	UNITY_SETUP_INSTANCE_ID(i);
-	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-
-	uint index = (id >> 2) + VFX_GET_INSTANCE_ID(i) * 2048;
 	
 	${VFXLoadAttributesOrCull}
 	${VFXProcessBlocks}
 			
-	if (!attributes.alive)
+	if (!alive)
 		return o;
 
 	#if TARGET_FROM_ATTRIBUTES
 	${VFXLoadSize}
-	float4x4 elementToVFX = GetElementToVFXMatrix(
-		attributes.axisX,
-		attributes.axisY,
-		attributes.axisZ,
-		float3(attributes.angleX,attributes.angleY,attributes.angleZ),
-		float3(attributes.pivotX,attributes.pivotY,attributes.pivotZ),
-		size3,
-		attributes.position);
+	float4x4 elementToVFX = GetElementToVFXMatrix(axisX,axisY,axisZ,float3(angleX,angleY,angleZ),float3(pivotX,pivotY,pivotZ),size3,position);
 
-	attributes.position = mul(elementToVFX,float4(0,0,0,1)).xyz;
+	position = mul(elementToVFX,float4(0,0,0,1)).xyz;
 	
 	${VFXLoadParameter:{targetOffset}}
-	attributes.targetPosition = mul(elementToVFX,float4(targetOffset,1)).xyz;
+	targetPosition = mul(elementToVFX,float4(targetOffset,1)).xyz;
 	#endif
 		
-	float4 pos0 = TransformPositionVFXToClip(attributes.position);
-	float4 pos1 = TransformPositionVFXToClip(attributes.targetPosition);
+	float4 pos0 = TransformPositionVFXToClip(position);
+	float4 pos1 = TransformPositionVFXToClip(targetPosition);
 	
-	pos0 = ClipOnNearPlane(pos0, pos1);
-	pos1 = ClipOnNearPlane(pos1, pos0);
+	// Clip on near plane
+	pos0.w = max(1.0f, pos0.w);
+	pos1.w = max(1.0f, pos1.w);
 	
 	float2 ndcPos0 = pos0.xy / pos0.w;
 	float2 ndcPos1 = pos1.xy / pos1.w;
@@ -81,9 +57,9 @@ VFX_VARYING_PS_INPUTS vert(uint id : SV_VertexID, vs_input i)
 	#endif
 	
 	// If ever used we need the position in vfx space (we dont take into account the pixel offset)
-	float3 vPos = ((id >> 1) & 1) ? attributes.position : attributes.targetPosition;
+	float3 vPos = ((id >> 1) & 1) ? position : targetPosition;
 	
-	o.VFX_VARYING_POSCS = vPosArray[id & 3];
+	o.VFX_VARYING_POSCS = vPosArray[id & 3];;
 	
 	${VFXVertexCommonProcess}
 	${VFXVertexAdditionalProcess}

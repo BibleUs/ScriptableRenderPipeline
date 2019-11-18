@@ -32,10 +32,12 @@ void IntegrateBSDF_LineRef(float3 V, float3 positionWS,
 
         if (NdotL > 0)
         {
-            CBSDF cbsdf = EvaluateBSDF(V, L, preLightData, bsdfData);
+            float3 lightDiff, lightSpec;
 
-            diffuseLighting  += cbsdf.diffR * (sinLT / dist2);
-            specularLighting += cbsdf.specR * (sinLT / dist2);
+            BSDF(V, L, NdotL, positionWS, preLightData, bsdfData, lightDiff, lightSpec);
+
+            diffuseLighting  += lightDiff * (sinLT / dist2 * NdotL);
+            specularLighting += lightSpec * (sinLT / dist2 * NdotL);
         }
     }
 
@@ -99,14 +101,20 @@ void IntegrateBSDF_AreaRef(float3 V, float3 positionWS,
 
         // We calculate area reference light with the area integral rather than the solid angle one.
         float NdotL = saturate(dot(bsdfData.normalWS, L));
-        float illuminance = cosLNs / (sqrDist * lightPdf);
+        float illuminance = cosLNs * NdotL / (sqrDist * lightPdf);
+
+        float3 localDiffuseLighting = float3(0.0, 0.0, 0.0);
+        float3 localSpecularLighting = float3(0.0, 0.0, 0.0);
 
         if (illuminance > 0.0)
         {
-            CBSDF cbsdf = EvaluateBSDF(V, L, preLightData, bsdfData);
-            diffuseLighting += cbsdf.diffR * lightData.color * illuminance * lightData.diffuseDimmer;
-            specularLighting += cbsdf.specR * lightData.color * illuminance * lightData.specularDimmer;
+            BSDF(V, L, NdotL, positionWS, preLightData, bsdfData, localDiffuseLighting, localSpecularLighting);
+            localDiffuseLighting *= lightData.color * illuminance * lightData.diffuseDimmer;
+            localSpecularLighting *= lightData.color * illuminance * lightData.specularDimmer;
         }
+
+        diffuseLighting += localDiffuseLighting;
+        specularLighting += localSpecularLighting;
     }
 
     diffuseLighting /= float(sampleCount);
@@ -136,7 +144,7 @@ float3 IntegrateLambertIBLRef(LightLoopContext lightLoopContext,
 
         if (NdotL > 0.0)
         {
-            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0, lightData.rangeCompressionFactorCompensation);
+            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0);
 
             // We don't multiply by 'bsdfData.diffuseColor' here. It's done only once in PostEvaluateBSDF().
             acc += LambertNoPI() * weightOverPdf * val.rgb;
@@ -171,7 +179,7 @@ float3 IntegrateDisneyDiffuseIBLRef(LightLoopContext lightLoopContext,
             // in weightOverPdf of ImportanceSampleLambert call.
             float disneyDiffuse = DisneyDiffuse(NdotV, NdotL, LdotV, bsdfData.perceptualRoughness);
 
-            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0, lightData.rangeCompressionFactorCompensation);
+            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0);
             // We don't multiply by 'bsdfData.diffuseColor' here. It's done only once in PostEvaluateBSDF().
             acc += disneyDiffuse * weightOverPdf * val.rgb;
         }
@@ -224,7 +232,7 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
             // Fresnel component is apply here as describe in ImportanceSampleGGX function
             float3 FweightOverPdf = F_Schlick(bsdfData.fresnel0, VdotH) * weightOverPdf;
 
-            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0, lightData.rangeCompressionFactorCompensation);
+            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0);
 
             acc += FweightOverPdf * val.rgb;
         }

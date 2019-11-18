@@ -13,8 +13,8 @@ The HDRP Reflection Probe uses the [built-in render pipeline Reflection Probe](h
 | **Property**      | **Description**                                              |
 | ----------------- | ------------------------------------------------------------ |
 | **Type**          | Use the drop-down to select the mode this Reflection Probe uses to capture a view of the Scene. Reflective Materials query this capture to process reflections for their surface.<br />&#8226; **Realtime**: Makes the Reflection Probe capture a view of the Scene in real time. Use the **Realtime Mode** property to set the time period.<br />&#8226; **Custom**: Allows you to assign a cubemap Texture to act as the Reflection Probe's captured view of the Scene. Use the **Texture** property to assign the cubemap.<br />&#8226; **Baked**: Makes the Reflection Probe use a static cubemap Texture at runtime. You must bake this Texture before you build your Unity Project. |
-| **Realtime Mode** | Use the drop-down to select how often the Reflection Probe should capture a view of the Scene.<br />&#8226;**Every Frame**: Updates the Probe’s capture data every frame.<br />&#8226; **On Enable**: Updates the Probe’s capture data each time Unity calls the component’s `OnEnable()` function. This occurs whenever you enable the component in the Inspector or activate the GameObject that the component attaches to.<br /><br /> This property only appears when you select **Realtime** from the **Type** drop-down. |
-| **Texture**       | Assign a Texture for the Reflection Probe to use as its captured view of the Scene.<br />This property only appears when you select **Custom** from the **Type** drop-down. |
+| **Realtime Mode** | Use the drop-down to select how often the Reflection Probe should capture a view of the Scene.<br />&#8226;**Every Frame**: Updates the Probe’s capture data every frame.<br />&#8226; **On Enable**: Updates the Probe’s capture data each time Unity calls the component’s `OnEnable()` function. This occurs whenever you enable the component in the Inspector or activate the GameObject that the component attaches to.<br /><br />Select **Realtime** from the **Type** drop-down to expose this property. |
+| **Texture**       | Assign a Texture for the Reflection Probe to use as its captured view of the Scene.<br />Select **Custom** from the **Type** drop-down to expose this property. |
 
 ### Projection Settings
 
@@ -23,7 +23,7 @@ The following properties control the projection settings for this Reflection Pro
 | **Property**                             | **Description**                                              |
 | ---------------------------------------- | ------------------------------------------------------------ |
 | **Proxy Volume**                         | The [Reflection Proxy Volume](Reflection-Proxy-Volume.html) this Probe uses to correct displacement issues between the Probe’s capture point (**Mirror Position**) and the position of the reflective Material using the Texture this Probe captures. Note: The **Proxy Volume** you assign must be the same **Shape** as the Influence Volume. |
-| **Use Influence Volume As Proxy Volume** | Enable the checkbox to use the boundaries of the Influence Volume as the Proxy Volume.<br />This property only appears when you have not set a Reflection Proxy Volume to the **Proxy Volume** property. |
+| **Use Influence Volume As Proxy Volume** | Enable the checkbox to use the boundaries of the Influence Volume as the Proxy Volume. Do not assign the **Proxy Volume** property to expose this property. |
 
 <a name="InfluenceVolume"></a>
 
@@ -75,7 +75,6 @@ The following properties control extra behavior options for fine-tuning the beha
 | **Light Layer** | This Reflection Probe only uses Lights on the corresponding Light Layer to capture its view of the Scene. Navigate to your Project’s **HDRP Asset > Render Pipeline Supported Features** and enable **Light Layers** to use this property. |
 | **Multiplier**  | A multiplier for the RenderTexture the Reflection Probe captures. The Reflection Probe applies this multiplier when Reflective Materials query the RenderTexture. |
 | **Weight**      | The overall weight of this Reflection Probe’s contribution to the reflective effect of Materials. When Reflection Probe’s blend together, the weight of each Probe determines their contribution to a reflective Material in the blend area. |
-| **Range Compression Factor**      | The result of the rendering of the probe will be divided by this factor. When the probe is read, this factor is undone as the probe data is read. This is especially useful to deal with very bright or dark objects in the reflections that will otherwise be saturated. |
 
 ## Gizmos
 

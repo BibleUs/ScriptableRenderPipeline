@@ -4,7 +4,6 @@ using System.Linq;
 using UnityEditor.ShaderGraph.Drawing.Controls;
 using UnityEngine;
 using UnityEditor.Graphing;
-using UnityEditor.ShaderGraph.Internal;
 
 namespace UnityEditor.ShaderGraph
 {
@@ -61,7 +60,7 @@ namespace UnityEditor.ShaderGraph
             {
                 var scope = ModificationScope.Nothing;
 
-                if (!GradientUtil.CheckEquivalency(gradient, value))
+                if (!GradientUtils.CheckEquivalency(gradient, value))
                     scope = scope < ModificationScope.Graph ? ModificationScope.Graph : scope;
 
                 if (scope > ModificationScope.Nothing)
@@ -95,15 +94,15 @@ namespace UnityEditor.ShaderGraph
             RemoveSlotsNameNotMatching(new[] { OutputSlotId });
         }
 
-        public void GenerateNodeCode(ShaderStringBuilder sb, GenerationMode generationMode)
+        public void GenerateNodeCode(ShaderStringBuilder sb, GraphContext graphContext, GenerationMode generationMode)
         {
             if (generationMode.IsPreview())
             {
-                sb.AppendLine("Gradient {0} = {1};", GetVariableNameForSlot(outputSlotId), GradientUtil.GetGradientForPreview(GetVariableNameForNode()));
+                sb.AppendLine("Gradient {0} = {1};", GetVariableNameForSlot(outputSlotId), GradientUtils.GetGradientForPreview(GetVariableNameForNode()));
             }
             else
             {
-                sb.AppendLine("Gradient {0} = {1}", GetVariableNameForSlot(outputSlotId), GradientUtil.GetGradientValue(gradient, ";"));
+                sb.AppendLine("Gradient {0} = {1}", GetVariableNameForSlot(outputSlotId), GradientUtils.GetGradientValue(gradient, true, ";"));
             }
         }
 
@@ -125,7 +124,7 @@ namespace UnityEditor.ShaderGraph
 
             base.CollectShaderProperties(properties, generationMode);
 
-            GradientUtil.GetGradientPropertiesForPreview(properties, GetVariableNameForNode(), gradient);
+            GradientUtils.GetGradientPropertiesForPreview(properties, GetVariableNameForNode(), gradient);
         }
 
         public AbstractShaderProperty AsShaderProperty()

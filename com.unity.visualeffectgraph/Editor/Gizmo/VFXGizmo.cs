@@ -19,7 +19,7 @@ namespace UnityEditor.VFX
         public readonly Type type;
     }
 
-    abstract class VFXGizmo
+    public abstract class VFXGizmo
     {
         public interface IProperty<T>
         {
@@ -193,7 +193,7 @@ namespace UnityEditor.VFX
         public virtual bool needsComponent { get { return false; } }
     }
 
-    abstract class VFXGizmo<T> : VFXGizmo
+    public abstract class VFXGizmo<T> : VFXGizmo
     {
         public override void CallDrawGizmo(object value)
         {
@@ -215,7 +215,7 @@ namespace UnityEditor.VFX
 
         public abstract Bounds OnGetGizmoBounds(T value);
     }
-    abstract class VFXSpaceableGizmo<T> : VFXGizmo<T>
+    public abstract class VFXSpaceableGizmo<T> : VFXGizmo<T>
     {
         public override void OnDrawGizmo(T value)
         {

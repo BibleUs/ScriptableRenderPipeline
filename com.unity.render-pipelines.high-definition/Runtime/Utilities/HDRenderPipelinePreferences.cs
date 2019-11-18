@@ -1,4 +1,6 @@
-namespace UnityEngine.Rendering.HighDefinition
+using UnityEngine.Experimental.Rendering.HDPipeline;
+
+namespace UnityEngine.Rendering
 {
     // This file can't be in the editor assembly as we need to access it in runtime-editor-specific
     // places like OnGizmo etc and we don't want to add the editor assembly as a dependency of the
@@ -8,7 +10,7 @@ namespace UnityEngine.Rendering.HighDefinition
     using UnityEditor;
     using AntialiasingMode = HDAdditionalCameraData.AntialiasingMode;
 
-    static class HDRenderPipelinePreferences
+    public static class HDRenderPipelinePreferences
     {
         static bool m_Loaded = false;
 
@@ -111,7 +113,7 @@ namespace UnityEngine.Rendering.HighDefinition
                         EditorGUILayout.HelpBox("Temporal Anti-aliasing in the Scene View is only supported when Animated Materials are enabled.", MessageType.Info);
 
                     sceneViewStopNaNs = EditorGUILayout.Toggle("Scene View Stop NaNs", sceneViewStopNaNs);
-
+                    
                     matcapViewMixAlbedo = EditorGUILayout.Toggle("Mix Albedo in the Matcap", matcapViewMixAlbedo);
                     if(matcapViewMixAlbedo)
                         matcapViewScale = EditorGUILayout.FloatField("Matcap intensity scale", matcapViewScale);

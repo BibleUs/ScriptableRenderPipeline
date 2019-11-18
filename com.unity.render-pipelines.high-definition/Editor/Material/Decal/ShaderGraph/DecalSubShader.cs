@@ -1,13 +1,11 @@
 using System.Collections.Generic;
-using Data.Util;
 using UnityEditor.Graphing;
 using UnityEditor.ShaderGraph;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Experimental.Rendering.HDPipeline;
 
-namespace UnityEditor.Rendering.HighDefinition
+namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
-    [FormerName("UnityEditor.Experimental.Rendering.HDPipeline.DecalSubShader")]
     class DecalSubShader : IDecalSubShader
     {
         // CAUTION: c# code relies on the order in which the passes are declared, any change will need to be reflected in Decalsystem.cs - s_MaterialDecalNames and s_MaterialDecalSGNames array
@@ -210,7 +208,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 "AttributesMesh.tangentOS",
                 "AttributesMesh.uv0",
 
-                "FragInputs.tangentToWorld",
+                "FragInputs.worldToTangent",
                 "FragInputs.positionRWS",
                 "FragInputs.texCoord0",
             },
@@ -278,10 +276,10 @@ namespace UnityEditor.Rendering.HighDefinition
             RequiredFields = new List<string>()
             {
                 "AttributesMesh.normalOS",
-                "AttributesMesh.tangentOS",
+                "AttributesMesh.tangentOS",     
                 "AttributesMesh.uv0",
 
-                "FragInputs.tangentToWorld",
+                "FragInputs.worldToTangent",
                 "FragInputs.positionRWS",
                 "FragInputs.texCoord0",
             },
@@ -353,7 +351,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 "AttributesMesh.tangentOS",
                 "AttributesMesh.uv0",
 
-                "FragInputs.tangentToWorld",
+                "FragInputs.worldToTangent",
                 "FragInputs.positionRWS",
                 "FragInputs.texCoord0",
             },
@@ -404,7 +402,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 "AttributesMesh.tangentOS",
                 "AttributesMesh.uv0",
 
-                "FragInputs.tangentToWorld",
+                "FragInputs.worldToTangent",
                 "FragInputs.positionRWS",
                 "FragInputs.texCoord0",
             },
@@ -444,10 +442,9 @@ namespace UnityEditor.Rendering.HighDefinition
         };
 
 
-        private static ActiveFields GetActiveFieldsFromMasterNode(AbstractMaterialNode iMasterNode, Pass pass)
+        private static HashSet<string> GetActiveFieldsFromMasterNode(AbstractMaterialNode iMasterNode, Pass pass)
         {
-            var activeFields = new ActiveFields();
-            var baseActiveFields = activeFields.baseInstance;
+            HashSet<string> activeFields = new HashSet<string>();
 
             DecalMasterNode masterNode = iMasterNode as DecalMasterNode;
             if (masterNode == null)
@@ -456,19 +453,19 @@ namespace UnityEditor.Rendering.HighDefinition
             }
             if(masterNode.affectsAlbedo.isOn)
             {
-                baseActiveFields.Add("Material.AffectsAlbedo");
+                activeFields.Add("Material.AffectsAlbedo");
             }
             if (masterNode.affectsNormal.isOn)
             {
-                baseActiveFields.Add("Material.AffectsNormal");
+                activeFields.Add("Material.AffectsNormal");
             }
             if (masterNode.affectsEmission.isOn)
             {
-                baseActiveFields.Add("Material.AffectsEmission");
+                activeFields.Add("Material.AffectsEmission");
             }
             if (masterNode.affectsSmoothness.isOn || masterNode.affectsMetal.isOn || masterNode.affectsAO.isOn)
             {
-                baseActiveFields.Add("Material.AffectsMaskMap");
+                activeFields.Add("Material.AffectsMaskMap");
             }
 
             return activeFields;
@@ -478,20 +475,16 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             if (mode == GenerationMode.ForReals || pass.UseInPreview)
             {
+                SurfaceMaterialOptions materialOptions = HDSubShaderUtilities.BuildMaterialOptions(SurfaceType.Opaque, AlphaMode.Alpha, false, false, false);
+
                 pass.OnGeneratePass(masterNode);
 
                 // apply master node options to active fields
-                var activeFields = GetActiveFieldsFromMasterNode(masterNode, pass);
+                HashSet<string> activeFields = GetActiveFieldsFromMasterNode(masterNode, pass);
 
                 // use standard shader pass generation
-                bool vertexActive = false;
-                if (masterNode.IsSlotConnected(DecalMasterNode.PositionSlotId) ||
-                    masterNode.IsSlotConnected(DecalMasterNode.VertexNormalSlotID) ||
-                    masterNode.IsSlotConnected(DecalMasterNode.VertexTangentSlotID) )
-                {
-                    vertexActive = true;
-                }
-                return HDSubShaderUtilities.GenerateShaderPass(masterNode, pass, mode, activeFields, result, sourceAssetDependencyPaths, vertexActive);
+                bool vertexActive = masterNode.IsSlotConnected(DecalMasterNode.PositionSlotId);
+                return HDSubShaderUtilities.GenerateShaderPass(masterNode, pass, mode, materialOptions, activeFields, result, sourceAssetDependencyPaths, vertexActive);
             }
             else
             {
@@ -516,9 +509,14 @@ namespace UnityEditor.Rendering.HighDefinition
             subShader.AddShaderChunk("{", true);
             subShader.Indent();
             {
+                HDMaterialTags materialTags = HDSubShaderUtilities.BuildMaterialTags(HDRenderQueue.RenderQueueType.Opaque, 0, false);
+
                 // Add tags at the SubShader level
-                int queue = HDRenderQueue.ChangeType(HDRenderQueue.RenderQueueType.Opaque, masterNode.drawOrder, false);
-                HDSubShaderUtilities.AddTags(subShader, HDRenderPipeline.k_ShaderTagName, HDRenderTypeTags.Opaque, queue);
+                {
+                    var tagsVisitor = new ShaderStringBuilder();
+                    materialTags.GetTags(tagsVisitor, HDRenderPipeline.k_ShaderTagName);
+                    subShader.AddShaderChunk(tagsVisitor.ToString(), false);
+                }
 
                 // Caution: Order of GenerateShaderPass matter. Only generate required pass
                 if (masterNode.affectsAlbedo.isOn || masterNode.affectsNormal.isOn || masterNode.affectsMetal.isOn || masterNode.affectsAO.isOn || masterNode.affectsSmoothness.isOn)
@@ -547,7 +545,7 @@ namespace UnityEditor.Rendering.HighDefinition
             }
             subShader.Deindent();
             subShader.AddShaderChunk("}", true);
-            subShader.AddShaderChunk(@"CustomEditor ""UnityEditor.Rendering.HighDefinition.DecalGUI""");
+            subShader.AddShaderChunk(@"CustomEditor ""UnityEditor.Experimental.Rendering.HDPipeline.DecalGUI""");
             string s = subShader.GetShaderString(0);
             return s;
         }

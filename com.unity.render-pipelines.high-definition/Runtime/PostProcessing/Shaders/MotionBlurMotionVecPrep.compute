@@ -5,7 +5,7 @@
 #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
 
 
-#define SKIP_PREPPING_IF_NOT_NEEDED defined(PLATFORM_SUPPORTS_WAVE_INTRINSICS)
+#define SKIP_PREPPING_IF_NOT_NEEDED defined(SUPPORTS_WAVE_INTRINSICS)
 
 
 
@@ -59,7 +59,7 @@ float2 ComputeMotionVec(PositionInputs posInput, float2 sampledMotionVec)
 [numthreads(8, 8,1)]
 void MotionVecPreppingCS(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+    UNITY_STEREO_ASSIGN_COMPUTE_EYE_INDEX(dispatchThreadId.z);
 
     float3 motionVecAndDepth = 0.0f;
     float4 motionVecBufferSample = LOAD_TEXTURE2D_X(_CameraMotionVectorsTexture, dispatchThreadId.xy);

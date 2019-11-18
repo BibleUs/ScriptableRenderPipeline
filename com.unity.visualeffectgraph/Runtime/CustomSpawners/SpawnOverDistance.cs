@@ -4,11 +4,11 @@ using UnityEngine.Experimental.VFX;
 
 namespace UnityEditor.VFX
 {
-    class SpawnOverDistance : VFXSpawnerCallbacks
+    public class SpawnOverDistance : VFXSpawnerCallbacks
     {
         public class InputProperties
         {
-            public Vector3 Position = Vector3.zero;
+            public Vector3 Position;
             public float RatePerUnit = 10.0f;
             public float VelocityThreshold = 50.0f;
         }

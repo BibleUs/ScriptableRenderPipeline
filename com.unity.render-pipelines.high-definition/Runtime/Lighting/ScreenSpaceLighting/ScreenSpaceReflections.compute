@@ -50,7 +50,7 @@
 #endif
 
     TEXTURE2D_X(            _SsrClearCoatMaskTexture);
-    StructuredBuffer<int2>  _DepthPyramidMipLevelOffsets;
+    StructuredBuffer<int2>  _SsrDepthPyramidMipLevelOffsets;
 
 CBUFFER_START(UnityScreenSpaceReflections)
     int   _SsrStencilExclusionValue;
@@ -96,7 +96,7 @@ void WriteDebugInfo(uint2 positionSS, float4 value)
 [numthreads(8, 8, 1)]
 void ScreenSpaceReflectionsTracing(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+    UNITY_STEREO_ASSIGN_COMPUTE_EYE_INDEX(dispatchThreadId.z);
     uint2 positionSS = dispatchThreadId.xy;
 
 #ifdef SSR_USE_STENCIL
@@ -110,7 +110,7 @@ void ScreenSpaceReflectionsTracing(uint3 dispatchThreadId : SV_DispatchThreadID)
 #endif
 
     float2 positionNDC = positionSS * _ScreenSize.zw + (0.5 * _ScreenSize.zw); // Should we precompute the half-texel bias? We seem to use it a lot.
-    float  deviceDepth = LOAD_TEXTURE2D_X(_CameraDepthTexture, positionSS).r;
+    float  deviceDepth = LOAD_TEXTURE2D_X(_DepthPyramidTexture, positionSS).r;
 
     bool killRay = deviceDepth == UNITY_RAW_FAR_CLIP_VALUE;
 
@@ -214,13 +214,13 @@ void ScreenSpaceReflectionsTracing(uint3 dispatchThreadId : SV_DispatchThreadID)
         rayPos.xy += raySign.xy * satEdgeDist;
 
         int2 mipCoord  = (int2)rayPos.xy >> mipLevel;
-        int2 mipOffset = _DepthPyramidMipLevelOffsets[mipLevel];
+        int2 mipOffset = _SsrDepthPyramidMipLevelOffsets[mipLevel];
         // Bounds define 4 faces of a cube:
         // 2 walls in front of the ray, and a floor and a base below it.
         float4 bounds;
 
         bounds.xy = (mipCoord + rayStep) << mipLevel;
-        bounds.z  = LOAD_TEXTURE2D_X(_CameraDepthTexture, mipOffset + mipCoord).r;
+        bounds.z  = LOAD_TEXTURE2D_X(_DepthPyramidTexture, mipOffset + mipCoord).r;
 
         // We define the depth of the base as the depth value as:
         // b = DeviceDepth((1 + thickness) * LinearDepth(d))
@@ -310,7 +310,7 @@ float PerceptualRoughnessFade(float perceptualRoughness, float fadeRcpLength, fl
 [numthreads(8, 8, 1)]
 void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+    UNITY_STEREO_ASSIGN_COMPUTE_EYE_INDEX(dispatchThreadId.z);
     uint2 positionSS = dispatchThreadId.xy;
 
     // TODO: this texture is sparse (mostly black). Can we avoid reading every texel? How about using Hi-S?
@@ -352,7 +352,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
     // Inverse pre-exposure
     float prevExposure = GetPreviousExposureMultiplier();
     color /= prevExposure + (prevExposure == 0.0); // zero-div guard
-
+    
     // Disable SSR for negative, infinite and NaN history values.
     uint3 intCol   = asuint(color);
     bool  isPosFin = Max3(intCol.r, intCol.g, intCol.b) < 0x7F800000;

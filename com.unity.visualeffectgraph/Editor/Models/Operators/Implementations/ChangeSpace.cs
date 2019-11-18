@@ -13,7 +13,6 @@ namespace UnityEditor.VFX.Operator
 
         public class InputProperties
         {
-            [Tooltip("Sets the spaceable attribute whose space should be changed. This is useful for converting a world space position or direction to local, or vice-versa. ")]
             public Position x = Position.defaultValue;
         }
 
@@ -26,13 +25,7 @@ namespace UnityEditor.VFX.Operator
         }
 
         public override string libraryName { get { return "Change Space"; } }
-        public override string name
-        {
-            get
-            {
-                return $"Change Space ({ ((GetNbOutputSlots() > 0) ? outputSlots[0].property.type.UserFriendlyName() : "null") })";
-            }
-        }
+        public override string name { get { return "Change Space"; } }
 
         protected override ValidTypeRule typeFilter
         {
