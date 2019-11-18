@@ -800,6 +800,16 @@ namespace UnityEditor.VFX
             return m_layoutAttributeSource.GetBucketLayoutInfo();
         }
 
+        public override string GetLoadAttributeCode(VFXAttribute attrib, VFXAttributeLocation location)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string GetStoreAttributeCode(VFXAttribute attrib, string value)
+        {
+            throw new NotImplementedException();
+        }
+
         [SerializeField]
         private VFXCoordinateSpace m_Space; // TODO Should be an actual setting
         [NonSerialized]
