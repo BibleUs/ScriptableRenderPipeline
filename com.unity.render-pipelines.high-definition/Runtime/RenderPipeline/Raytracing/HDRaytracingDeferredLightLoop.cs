@@ -33,15 +33,13 @@ namespace UnityEngine.Rendering.HighDefinition
             public ComputeBuffer rayBinSizeResult;
 #if ENABLE_RAYTRACING
             public RayTracingAccelerationStructure accelerationStructure;
-#endif
             public HDRaytracingLightCluster lightCluster;
 
             // Shaders
-#if ENABLE_RAYTRACING
             public RayTracingShader gBufferRaytracingRT;
-#endif
             public ComputeShader deferredRaytracingCS;
             public ComputeShader rayBinningCS;
+#endif
         }
 
         public struct DeferredLightingRTResources
@@ -165,6 +163,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         static void BinRays(CommandBuffer cmd, in DeferredLightingRTParameters config, RTHandle directionBuffer, int texWidth, int texHeight)
         {
+#if ENABLE_RAYTRACING
             // We need to go through the ray binning pass (if required)
             int currentKernel = config.rayBinningCS.FindKernel(config.halfResolution ? "RayBinningHalf" : "RayBinning");
 
@@ -183,6 +182,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             // Run the binning
             cmd.DispatchCompute(config.rayBinningCS, currentKernel, numTilesRayBinX, numTilesRayBinY, config.viewCount);
+#endif
         }
 
         static void RenderRaytracingDeferredLighting(CommandBuffer cmd, in DeferredLightingRTParameters parameters, in DeferredLightingRTResources buffers)
@@ -272,6 +272,7 @@ namespace UnityEngine.Rendering.HighDefinition
             CoreUtils.SetKeyword(cmd, "DIFFUSE_LIGHTING_ONLY", false);
 
             // Now let's do the deferred shading pass on the samples
+#if ENABLE_RAYTRACING
             int currentKernel = parameters.deferredRaytracingCS.FindKernel(parameters.halfResolution ? "RaytracingDeferredHalf" : "RaytracingDeferred");
 
             // Bind the lightLoop data
@@ -301,6 +302,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             // Compute the texture
             cmd.DispatchCompute(parameters.deferredRaytracingCS, currentKernel, numTilesXHR, numTilesYHR, parameters.viewCount);
+#endif
         }
     }
 }

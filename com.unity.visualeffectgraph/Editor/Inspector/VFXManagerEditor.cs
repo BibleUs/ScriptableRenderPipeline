@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEngine.Rendering;
 using UnityEditor.Callbacks;
 using UnityEditor.VFX;

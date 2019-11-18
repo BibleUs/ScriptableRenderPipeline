@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 namespace UnityEngine.VFX.Utility
 {

@@ -7,7 +7,7 @@ using System.Reflection;
 
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 using UnityEditor.VFX;
 using UnityEditor.VFX.UI;

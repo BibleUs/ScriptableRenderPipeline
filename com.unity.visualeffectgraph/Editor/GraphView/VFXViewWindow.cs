@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor.UIElements;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEditor.VFX;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
@@ -55,7 +55,7 @@ namespace  UnityEditor.VFX.UI
         public void LoadAsset(VisualEffectAsset asset, VisualEffect effectToAttach)
         {
             string assetPath = AssetDatabase.GetAssetPath(asset);
-
+#if ENABLE_RAYTRACING
             VisualEffectResource resource = VisualEffectResource.GetResourceAtPath(assetPath);
 
             //Transitionning code
@@ -66,8 +66,9 @@ namespace  UnityEditor.VFX.UI
             }
 
             LoadResource(resource, effectToAttach);
+#endif
         }
-
+#if ENABLE_RAYTRACING
         public void LoadResource(VisualEffectResource resource, VisualEffect effectToAttach = null)
         {
             m_ResourceHistory.Clear();
@@ -146,7 +147,7 @@ namespace  UnityEditor.VFX.UI
             }
             return selectedResource;
         }
-
+#endif
         Action m_OnUpdateAction;
 
         protected void OnEnable()
@@ -158,7 +159,7 @@ namespace  UnityEditor.VFX.UI
             SetupFramingShortcutHandler(graphView);
 
             rootVisualElement.Add(graphView);
-
+#if ENABLE_RAYTRACING
             // make sure we don't do something that might touch the model on the view OnEnable because
             // the models OnEnable might be called after in the case of a domain reload.
             m_OnUpdateAction = () =>
@@ -169,6 +170,7 @@ namespace  UnityEditor.VFX.UI
                     LoadResource(currentAsset);
                 }
             };
+#endif
 
             autoCompile = true;
 
@@ -286,8 +288,9 @@ namespace  UnityEditor.VFX.UI
                 }
             }
         }
-
+#if ENABLE_RAYTRACING
         [SerializeField]
         private VisualEffectResource m_DisplayedResource;
+#endif
     }
 }

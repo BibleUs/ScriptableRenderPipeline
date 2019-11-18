@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEditor.VFX;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEngine.Serialization;
 
 namespace UnityEditor.VFX
@@ -14,8 +14,9 @@ namespace UnityEditor.VFX
         void GenerateAttributeLayout(uint capacity, Dictionary<VFXAttribute, int> storedAttribute);
         string GetCodeOffset(VFXAttribute attrib, string index);
         uint GetBufferSize(uint capacity);
-
+#if ENABLE_RAYTRACING
         VFXGPUBufferDesc GetBufferDesc(uint capacity);
+#endif
     }
 
     class StructureOfArrayProvider : ILayoutProvider
@@ -35,6 +36,7 @@ namespace UnityEditor.VFX
         // return size
         private int GenerateBucketLayout(List<VFXAttribute> attributes, int bucketId)
         {
+#if ENABLE_RAYTRACING
             var sortedAttrib = attributes.OrderByDescending(a => VFXValue.TypeToSize(a.type));
 
             var attribBlocks = new List<List<VFXAttribute>>();
@@ -46,9 +48,10 @@ namespace UnityEditor.VFX
                 else
                     attribBlocks.Add(new List<VFXAttribute>() { value });
             }
-
+#endif
             int currentOffset = 0;
             int minAlignment = 0;
+#if ENABLE_RAYTRACING
             foreach (var block in attribBlocks)
             {
                 foreach (var attrib in block)
@@ -62,7 +65,7 @@ namespace UnityEditor.VFX
                     currentOffset += size;
                 }
             }
-
+#endif
             return (currentOffset + minAlignment - 1) & ~(minAlignment - 1);
         }
 
@@ -125,7 +128,7 @@ namespace UnityEditor.VFX
         {
             return (uint)m_BucketOffsets.LastOrDefault() + capacity * (uint)m_BucketSizes.LastOrDefault();
         }
-
+#if ENABLE_RAYTRACING
         public VFXGPUBufferDesc GetBufferDesc(uint capacity)
         {
             var layout = m_AttributeLayout.Select(o => new VFXLayoutElementDesc()
@@ -148,6 +151,7 @@ namespace UnityEditor.VFX
                 layout = layout.ToArray()
             };
         }
+#endif
 
         public struct BucketInfo
         {
@@ -172,6 +176,7 @@ namespace UnityEditor.VFX
 
             foreach (var kvp in m_AttributeLayout)
             {
+#if ENABLE_RAYTRACING
                 var attrib = kvp.Key;
                 int size = VFXValue.TypeToSize(attrib.type);
                 int offset = kvp.Value.offset;
@@ -181,6 +186,7 @@ namespace UnityEditor.VFX
                     buckets[kvp.Value.bucket].channels[i + offset] = i;
                     buckets[kvp.Value.bucket].usedSize = Math.Max(buckets[kvp.Value.bucket].usedSize, i + offset + 1);
                 }
+#endif
             }
 
             return buckets;
@@ -333,7 +339,7 @@ namespace UnityEditor.VFX
                 return m_layoutAttributeCurrent.GetBufferSize(alignedCapacity);
             }
         }
-
+#if ENABLE_RAYTRACING
         public VFXGPUBufferDesc attributeBufferDesc
         {
             get
@@ -341,7 +347,7 @@ namespace UnityEditor.VFX
                 return m_layoutAttributeCurrent.GetBufferDesc(alignedCapacity);
             }
         }
-
+#endif
         public VFXCoordinateSpace space
         {
             get { return m_Space; }
@@ -425,7 +431,7 @@ namespace UnityEditor.VFX
                 return "asfloat";
             return "";
         }
-
+#if ENABLE_RAYTRACING
         private string GetByteAddressBufferMethodSuffix(VFXAttribute attrib)
         {
             int size = VFXExpression.TypeToSize(attrib.type);
@@ -459,7 +465,7 @@ namespace UnityEditor.VFX
 
             return string.Format("attributeBuffer.Store{0}({1},{3}({2}))", GetByteAddressBufferMethodSuffix(attrib), m_layoutAttributeCurrent.GetCodeOffset(attrib, "index"), value, attrib.type == VFXValueType.Boolean ? "uint" : "asuint");
         }
-
+#endif
         public override IEnumerable<VFXContext> InitImplicitContexts()
         {
             if (!NeedsSort() && !m_Owners.OfType<IVFXSubRenderer>().Any(o => o.hasMotionVector))
@@ -519,7 +525,7 @@ namespace UnityEditor.VFX
         {
             return owners.OfType<VFXAbstractParticleOutput>().Any(o => o.HasSorting());
         }
-
+#if ENABLE_RAYTRACING
         public override void FillDescs(
             List<VFXGPUBufferDesc> outBufferDescs,
             List<VFXTemporaryGPUBufferDesc> outTemporaryBufferDescs,
@@ -776,6 +782,7 @@ namespace UnityEditor.VFX
                 layer = m_Layer
             });
         }
+#endif
 
         public override void CopySettings<T>(T dst)
         {

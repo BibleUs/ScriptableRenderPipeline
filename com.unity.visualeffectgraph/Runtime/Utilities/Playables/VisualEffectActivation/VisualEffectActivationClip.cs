@@ -3,7 +3,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 [Serializable]
 class VisualEffectActivationClip : PlayableAsset, ITimelineClipAsset

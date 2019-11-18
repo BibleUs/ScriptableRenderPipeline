@@ -3,7 +3,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.ObjectModel;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 interface IGizmoable
 {

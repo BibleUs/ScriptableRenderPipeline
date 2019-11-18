@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.VFX;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 namespace UnityEditor.VFX
 {
@@ -106,11 +106,12 @@ namespace UnityEditor.VFX
         {
             return valueType == VFXValueType.Boolean;
         }
-
+#if ENABLE_RAYTRACING
         public static int TypeToSize(VFXValueType type)
         {
             return VFXExpressionHelper.GetSizeOfType(type);
         }
+#endif
 
         public static string TypeToCode(VFXValueType type)
         {
@@ -394,7 +395,7 @@ namespace UnityEditor.VFX
 
         public bool Is(Flags flag)      { return (m_Flags & flag) == flag; }
         public bool IsAny(Flags flag)   { return (m_Flags & flag) != 0; }
-
+#if ENABLE_RAYTRACING
         public virtual VFXValueType valueType
         {
             get
@@ -403,6 +404,7 @@ namespace UnityEditor.VFX
                 return VFXExpressionHelper.GetTypeOfOperation(operation, data[0], data[1], data[2], data[3]);
             }
         }
+#endif
         public abstract VFXExpressionOperation operation { get; }
 
         public VFXExpression[] parents { get { return m_Parents; } }
@@ -421,10 +423,10 @@ namespace UnityEditor.VFX
 
             if (operation != other.operation)
                 return false;
-
+#if ENABLE_RAYTRACING
             if (valueType != other.valueType)
                 return false;
-
+#endif
             if (m_Flags != other.m_Flags)
                 return false;
 
@@ -482,7 +484,9 @@ namespace UnityEditor.VFX
                 hash = (hash * 397) ^ operands[i].GetHashCode();
 
             hash = (hash * 397) ^ m_Flags.GetHashCode();
+#if ENABLE_RAYTRACING
             hash = (hash * 397) ^ valueType.GetHashCode();
+#endif
             hash = (hash * 397) ^ operation.GetHashCode();
 
             return hash;

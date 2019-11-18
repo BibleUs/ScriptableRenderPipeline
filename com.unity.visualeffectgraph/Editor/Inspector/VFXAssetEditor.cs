@@ -24,6 +24,7 @@ class VFXExternalShaderProcessor : AssetPostprocessor
     {
         if (!allowExternalization)
             return;
+#if ENABLE_RAYTRACING
         if (assetPath.EndsWith(VisualEffectResource.Extension))
         {
             string vfxName = Path.GetFileNameWithoutExtension(assetPath);
@@ -82,16 +83,19 @@ class VFXExternalShaderProcessor : AssetPostprocessor
                 resource.shaderSources = descs;
             }
         }
+#endif
     }
 
     static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
     {
         foreach (var assetPath in deletedAssets)
         {
+#if ENABLE_RAYTRACING
             if (VisualEffectAssetModicationProcessor.HasVFXExtension(assetPath))
             {
                 VisualEffectResource.DeleteAtPath(assetPath);
             }
+#endif
         }
 
         if (!allowExternalization)
@@ -108,9 +112,9 @@ class VFXExternalShaderProcessor : AssetPostprocessor
 
                 if (Path.GetFileName(vfxPath) != k_ShaderDirectory)
                     continue;
-
+#if ENABLE_RAYTRACING
                 vfxPath = Path.GetDirectoryName(vfxPath) + "/" + vfxName + VisualEffectResource.Extension;
-
+#endif
                 if (deletedAssets.Contains(assetPath))
                     vfxToRecompile.Add(vfxPath);
                 else
@@ -120,6 +124,7 @@ class VFXExternalShaderProcessor : AssetPostprocessor
 
         foreach (var assetPath in vfxToRecompile)
         {
+#if ENABLE_RAYTRACING
             VisualEffectAsset asset = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(assetPath);
             if (asset == null)
                 continue;
@@ -130,19 +135,23 @@ class VFXExternalShaderProcessor : AssetPostprocessor
                 continue;
             resource.GetOrCreateGraph().SetExpressionGraphDirty();
             resource.GetOrCreateGraph().RecompileIfNeeded(false,true);
+#endif
         }
 
         foreach (var assetPath in vfxToRefresh)
         {
+#if ENABLE_RAYTRACING
             VisualEffectAsset asset = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(assetPath);
             if (asset == null)
                 return;
             AssetDatabase.ImportAsset(assetPath);
+#endif
         }
     }
 }
-
+#if ENABLE_RAYTRACING
 [CustomEditor(typeof(VisualEffectAsset))]
+#endif
 [CanEditMultipleObjects]
 class VisualEffectAssetEditor : Editor
 {
@@ -157,6 +166,7 @@ class VisualEffectAssetEditor : Editor
             Selection.activeInstanceID = instanceID;
             return true;
         }
+#if ENABLE_RAYTRACING
         else if (obj is VisualEffectAsset)
         {
             VFXViewWindow.GetWindow<VFXViewWindow>().LoadAsset(obj as VisualEffectAsset, null);
@@ -184,6 +194,7 @@ class VisualEffectAssetEditor : Editor
                 }
             }
         }
+#endif
         return false;
     }
 
@@ -210,11 +221,13 @@ class VisualEffectAssetEditor : Editor
     static Mesh s_CubeWireFrame;
     void OnEnable()
     {
+#if ENABLE_RAYTRACING
         VisualEffectAsset target = this.target as VisualEffectAsset;
-
+#endif
         m_OutputContexts.Clear();
+#if ENABLE_RAYTRACING
         m_OutputContexts.AddRange(target.GetResource().GetOrCreateGraph().children.OfType<IVFXSubRenderer>().OrderBy(t => t.sortPriority));
-
+#endif
         m_ReorderableList = new ReorderableList(m_OutputContexts, typeof(IVFXSubRenderer));
         m_ReorderableList.displayRemove = false;
         m_ReorderableList.displayAdd = false;
@@ -239,15 +252,17 @@ class VisualEffectAssetEditor : Editor
             m_VisualEffectGO = new GameObject("VisualEffect (Preview)");
 
             m_VisualEffectGO.hideFlags = HideFlags.DontSave;
+#if ENABLE_RAYTRACING
             m_VisualEffect = m_VisualEffectGO.AddComponent<VisualEffect>();
+#endif
             m_PreviewUtility.AddManagedGO(m_VisualEffectGO);
 
             m_VisualEffectGO.transform.localPosition = Vector3.zero;
             m_VisualEffectGO.transform.localRotation = Quaternion.identity;
             m_VisualEffectGO.transform.localScale = Vector3.one;
-
+#if ENABLE_RAYTRACING
             m_VisualEffect.visualEffectAsset = target;
-
+#endif
             m_CurrentBounds = new Bounds(Vector3.zero, Vector3.one);
             m_FrameCount = 0;
             m_Distance = 10;
@@ -295,8 +310,9 @@ class VisualEffectAssetEditor : Editor
             }
         }
 
-
+#if ENABLE_RAYTRACING
         resourceObject = new SerializedObject(targets.Cast<VisualEffectAsset>().Select(t => t.GetResource()).Where(t => t != null).ToArray());
+#endif
         resourceUpdateModeProperty = resourceObject.FindProperty("m_Infos.m_UpdateMode");
         cullingFlagsProperty = resourceObject.FindProperty("m_Infos.m_CullingFlags");
         motionVectorRenderModeProperty = resourceObject.FindProperty("m_Infos.m_RendererSettings.motionVectorGenerationMode");
@@ -308,7 +324,9 @@ class VisualEffectAssetEditor : Editor
     PreviewRenderUtility m_PreviewUtility;
 
     GameObject m_VisualEffectGO;
+#if ENABLE_RAYTRACING
     VisualEffect m_VisualEffect;
+#endif
     Vector3 m_Angles;
     float m_Distance;
     Bounds m_CurrentBounds;
@@ -425,6 +443,7 @@ class VisualEffectAssetEditor : Editor
         EditorGUIUtility.TrTextContent("Always recompute bounds, simulate only when visible"),
         EditorGUIUtility.TrTextContent("Always recompute bounds and simulate")
     };
+#if ENABLE_RAYTRACING
     static readonly VFXCullingFlags[] k_CullingOptionsValue = new VFXCullingFlags[]
     {
         VFXCullingFlags.CullSimulation | VFXCullingFlags.CullBoundsUpdate,
@@ -436,6 +455,7 @@ class VisualEffectAssetEditor : Editor
     {
         return ObjectNames.NicifyVariableName(mode.ToString());
     }
+#endif
 
     SerializedObject resourceObject;
     SerializedProperty resourceUpdateModeProperty;
@@ -449,12 +469,14 @@ class VisualEffectAssetEditor : Editor
 
     public override void OnInspectorGUI()
     {
+#if ENABLE_RAYTRACING
         resourceObject.Update();
 
         GUI.enabled = AssetDatabase.IsOpenForEdit(this.target, StatusQueryOptions.UseCachedIfPossible);
 
         EditorGUI.BeginChangeCheck();
         EditorGUI.showMixedValue = resourceUpdateModeProperty.hasMultipleDifferentValues;
+
         VFXUpdateMode newUpdateMode = (VFXUpdateMode)EditorGUILayout.EnumPopup(EditorGUIUtility.TrTextContent("Update Mode", "Specifies whether particles are updated using a fixed timestep (Fixed Delta Time), or in a frame-rate independent manner (Delta Time)."), (VFXUpdateMode)resourceUpdateModeProperty.intValue);
         if (EditorGUI.EndChangeCheck())
         {
@@ -664,6 +686,7 @@ class VisualEffectAssetEditor : Editor
                 }
             }
         }
+#endif
         GUI.enabled = false;
     }
 }

@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using UnityEditor.VFX;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEngine.Profiling;
 
 using UnityObject = UnityEngine.Object;
@@ -40,8 +40,10 @@ namespace UnityEditor.VFX
                     Debug.Log(string.Format("Recompile VFX asset: {0} ({1})", vfxAsset, AssetDatabase.GetAssetPath(vfxAsset)));
 
                 VFXExpression.ClearCache();
+#if ENABLE_RAYTRACING
                 vfxAsset.GetResource().GetOrCreateGraph().SetExpressionGraphDirty();
                 vfxAsset.GetResource().GetOrCreateGraph().OnSaved();
+#endif
             }
             AssetDatabase.SaveAssets();
         }
@@ -57,11 +59,13 @@ namespace UnityEditor.VFX
 
                 //Prevent possible automatic compilation afterwards ClearRuntimeData
                 VFXExpression.ClearCache();
+#if ENABLE_RAYTRACING
                 vfxAsset.GetResource().GetOrCreateGraph().SetExpressionGraphDirty();
                 vfxAsset.GetResource().GetOrCreateGraph().OnSaved();
 
                 //Now effective clear runtime data
                 vfxAsset.GetResource().ClearRuntimeData();
+#endif
             }
             AssetDatabase.SaveAssets();
         }
@@ -69,7 +73,7 @@ namespace UnityEditor.VFX
 
     class VisualEffectAssetModicationProcessor : UnityEditor.AssetModificationProcessor
     {
-
+#if ENABLE_RAYTRACING
         public static bool HasVFXExtension(string filePath)
         {
             return filePath.EndsWith(VisualEffectResource.Extension)
@@ -93,10 +97,12 @@ namespace UnityEditor.VFX
             Profiler.EndSample();
             return paths;
         }
+#endif
     }
 
     static class VisualEffectAssetExtensions
     {
+#if ENABLE_RAYTRACING
         public static VFXGraph GetOrCreateGraph(this VisualEffectResource resource)
         {
             VFXGraph graph = resource.graph as VFXGraph;
@@ -140,6 +146,7 @@ namespace UnityEditor.VFX
             }
             return resource;
         }
+#endif
     }
 
     class VFXGraph : VFXModel
@@ -182,7 +189,7 @@ namespace UnityEditor.VFX
             base.OnEnable();
             m_ExpressionGraphDirty = true;
         }
-
+#if ENABLE_RAYTRACING
         public VisualEffectResource visualEffectResource
         {
             get
@@ -199,6 +206,7 @@ namespace UnityEditor.VFX
                 }
             }
         }
+#endif
         [SerializeField]
         VFXUI m_UIInfos;
 
@@ -226,7 +234,7 @@ namespace UnityEditor.VFX
         {
             return !(model is VFXGraph); // Can hold any model except other VFXGraph
         }
-
+#if ENABLE_RAYTRACING
         public object Backup()
         {
             Profiler.BeginSample("VFXGraph.Backup");
@@ -241,10 +249,12 @@ namespace UnityEditor.VFX
 
             return result;
         }
+#endif
 
         public void Restore(object str)
         {
             Profiler.BeginSample("VFXGraph.Restore");
+#if ENABLE_RAYTRACING
             var scriptableObject = VFXMemorySerializer.ExtractObjects(str as byte[], false);
 
             Profiler.BeginSample("VFXGraph.Restore SendUnknownChange");
@@ -252,6 +262,7 @@ namespace UnityEditor.VFX
             {
                 model.OnUnknownChange();
             }
+#endif
             Profiler.EndSample();
             Profiler.EndSample();
             m_ExpressionGraphDirty = true;
@@ -332,6 +343,7 @@ namespace UnityEditor.VFX
 
         public void UpdateSubAssets()
         {
+#if ENABLE_RAYTRACING
             if (visualEffectResource == null)
                 return;
             Profiler.BeginSample("VFXEditor.UpdateSubAssets");
@@ -351,6 +363,7 @@ namespace UnityEditor.VFX
             {
                 Profiler.EndSample();
             }
+#endif
         }
 
         protected override void OnInvalidate(VFXModel model, VFXModel.InvalidationCause cause)
@@ -457,7 +470,9 @@ namespace UnityEditor.VFX
                     {
                         explored.Add(subgraphContext.subgraph);
                         m_SubgraphDependencies.Add(subgraphContext.subgraph);
+#if ENABLE_RAYTRACING
                         RecurseBuildDependencies(explored, subgraphContext.subgraph.GetResource().GetOrCreateGraph().children);
+#endif
                     }
                 }
                 else if( model is VFXSubgraphOperator)
@@ -498,8 +513,10 @@ namespace UnityEditor.VFX
                 if (child is VFXSubgraphContext)
                 {
                     var subgraphContext = child as VFXSubgraphContext;
+#if ENABLE_RAYTRACING
                     if( subgraphContext.subgraph != null)
                         RecurseSubgraphRecreateCopy(subgraphContext.subgraph.GetResource().GetOrCreateGraph());
+#endif
                     subgraphContext.RecreateCopy();
                 }
                 else if(child is VFXContext)
@@ -537,7 +554,7 @@ namespace UnityEditor.VFX
         }
 
 
-
+#if ENABLE_RAYTRACING
         IEnumerable<VFXGraph> GetAllGraphs<T>() where T : VisualEffectObject
         {
             var guids = AssetDatabase.FindAssets("t:" + typeof(T).Name);
@@ -552,6 +569,7 @@ namespace UnityEditor.VFX
                 }
             }
         }
+#endif
 
         public void ComputeDataIndices()
         {
@@ -608,10 +626,12 @@ namespace UnityEditor.VFX
                 if (m_DependentDirty)
                 {
                     var obj = GetResource().visualEffectObject;
+#if ENABLE_RAYTRACING
                     foreach (var graph in GetAllGraphs<VisualEffectAsset>())
                     {
                         graph.SubgraphDirty(obj);
                     }
+#endif
                     m_DependentDirty = false;
                 }
             }
@@ -666,7 +686,8 @@ namespace UnityEditor.VFX
         {
             get { return m_SubgraphDependencies.AsReadOnly(); }
         }
-
+#if ENABLE_RAYTRACING
         private VisualEffectResource m_Owner;
+#endif
     }
 }

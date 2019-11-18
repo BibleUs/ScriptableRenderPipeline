@@ -7,7 +7,7 @@ using UnityEditor.Experimental;
 using UnityEditor.VFX;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEditor.VFX.UI;
 
 using Object = UnityEngine.Object;
@@ -169,8 +169,10 @@ class VFXContextEditor : VFXSlotContainerEditor
                         {
                             GUILayout.Label(attr.attrib.name, Styles.cell);
                             Styles.DataTypeLabel(attr.attrib.type.ToString(), attr.attrib.type, Styles.cell, GUILayout.Width(64));
+#if ENABLE_RAYTRACING
                             int size = VFXExpressionHelper.GetSizeOfType(attr.attrib.type) * 4;
                             GUILayout.Label(size + " byte" + (size > 1 ? "s" : ""), Styles.cell, GUILayout.Width(64));
+#endif
                             var mode = attr.mode;
                             GUILayout.Label(mode.ToString(), Styles.cell, GUILayout.Width(72));
                         }

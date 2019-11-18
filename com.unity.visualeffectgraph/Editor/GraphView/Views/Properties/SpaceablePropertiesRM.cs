@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEngine.UIElements;
 using UnityEditor.VFX.UIElements;
 using VFXVector3Field = UnityEditor.VFX.UI.VFXVector3Field;

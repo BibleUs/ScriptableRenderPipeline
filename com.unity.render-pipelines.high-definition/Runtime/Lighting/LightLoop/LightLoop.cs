@@ -3085,8 +3085,8 @@ namespace UnityEngine.Rendering.HighDefinition
 #if ENABLE_RAYTRACING
             public RayTracingShader contactShadowsRTS;
             public RayTracingAccelerationStructure accelerationStructure;
-#endif
             public float            rayTracingBias;
+#endif
             public int              actualWidth;
             public int              actualHeight;
             public int              depthTextureParameterName;

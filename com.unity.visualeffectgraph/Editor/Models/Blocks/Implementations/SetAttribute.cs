@@ -9,6 +9,7 @@ namespace UnityEditor.VFX.Block
 {
     class SetAttributeVariantReadWritable : VariantProvider
     {
+#if ENABLE_RAYTRACING
         public override sealed IEnumerable<IEnumerable<KeyValuePair<string, object>>> ComputeVariants()
         {
             var attributes = VFXAttribute.AllIncludingVariadicReadWritable;
@@ -47,6 +48,7 @@ namespace UnityEditor.VFX.Block
                 }
             }
         }
+#endif
     }
 
     [VFXInfo(category = "Attribute/Set", variantProvider = typeof(SetAttributeVariantReadWritable))]

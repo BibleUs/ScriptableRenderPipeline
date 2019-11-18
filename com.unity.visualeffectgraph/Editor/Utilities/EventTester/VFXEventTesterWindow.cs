@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEditorInternal;
 using System.Collections.Generic;
 

@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEditor.VFX;
 using UnityEditor.Experimental.GraphView;
 
@@ -47,6 +47,7 @@ namespace UnityEditor.VFX.UI
 
             switch (type)
             {
+#if ENABLE_RAYTRACING
                 case Type.Operator:
                     {
                         string targetSubgraphPath = string.Format("{0}/{1}_SubgraphOperator.vfxoperator", graphDirPath, graphName);
@@ -57,6 +58,7 @@ namespace UnityEditor.VFX.UI
                         }
                         return VisualEffectAssetEditorUtility.CreateNew<VisualEffectSubgraphOperator>(targetSubgraphPath);
                     }
+#endif
                 case Type.Context:
                     {
                         string targetSubgraphPath = string.Format("{0}/{1}_Subgraph.vfx", graphDirPath, graphName);
@@ -67,6 +69,7 @@ namespace UnityEditor.VFX.UI
                         }
                         return VisualEffectAssetEditorUtility.CreateNewAsset(targetSubgraphPath);
                     }
+#if ENABLE_RAYTRACING
                 case Type.Block:
                     {
                         string targetSubgraphPath = string.Format("{0}/{1}_SubgraphBlock.vfxblock", graphDirPath, graphName);
@@ -77,6 +80,7 @@ namespace UnityEditor.VFX.UI
                         }
                         return VisualEffectAssetEditorUtility.CreateNew<VisualEffectSubgraphBlock>(targetSubgraphPath);
                     }
+#endif
             }
             return null;
         }
@@ -216,8 +220,10 @@ namespace UnityEditor.VFX.UI
             {
                 this.m_Rect = rect;
                 Init(sourceView, controllers);
+#if ENABLE_RAYTRACING
                 if (!CreateUniqueSubgraph("Subgraph", VisualEffectResource.Extension, VisualEffectAssetEditorUtility.CreateNewAsset))
                     return;
+#endif
                 CopyPasteNodes();
                 m_SourceNode = ScriptableObject.CreateInstance<VFXSubgraphContext>();
                 PostSetupNode();
@@ -231,8 +237,10 @@ namespace UnityEditor.VFX.UI
             {
                 this.m_Rect = rect;
                 Init(sourceView, controllers);
+#if ENABLE_RAYTRACING
                 if (!CreateUniqueSubgraph("SubgraphOperator", VisualEffectSubgraphOperator.Extension, VisualEffectAssetEditorUtility.CreateNew<VisualEffectSubgraphOperator>))
                     return;
+#endif
                 CopyPasteNodes();
                 m_SourceNode = ScriptableObject.CreateInstance<VFXSubgraphOperator>();
                 PostSetupNode();
@@ -250,8 +258,10 @@ namespace UnityEditor.VFX.UI
             {
                 this.m_Rect = rect;
                 Init(sourceView, controllers);
+#if ENABLE_RAYTRACING
                 if (!CreateUniqueSubgraph("SubgraphBlock", VisualEffectSubgraphBlock.Extension, VisualEffectAssetEditorUtility.CreateNew<VisualEffectSubgraphBlock>))
                     return;
+#endif
 
                 m_SourceControllers.RemoveAll(t => t is VFXContextController); // Don't copy contexts
                 CopyPasteNodes();

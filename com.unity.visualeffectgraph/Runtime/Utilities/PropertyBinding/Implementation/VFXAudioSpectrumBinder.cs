@@ -1,6 +1,6 @@
 #if VFX_HAS_AUDIO
 using System;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 namespace UnityEngine.VFX.Utility
 {

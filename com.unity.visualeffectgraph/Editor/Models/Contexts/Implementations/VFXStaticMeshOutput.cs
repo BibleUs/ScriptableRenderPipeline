@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor.VFX;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 namespace UnityEditor.VFX
 {

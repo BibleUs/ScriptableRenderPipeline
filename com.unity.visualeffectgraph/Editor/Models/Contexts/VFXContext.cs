@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.VFX;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 using Type = System.Type;
 using Object = UnityEngine.Object;
@@ -127,7 +127,9 @@ namespace UnityEditor.VFX
         public virtual VFXDataType ownedType                            { get { return contextType == VFXContextType.Output ? inputType : outputType; } }
         public virtual VFXTaskType taskType                             { get { return VFXTaskType.None; } }
         public virtual IEnumerable<VFXAttributeInfo> attributes         { get { return Enumerable.Empty<VFXAttributeInfo>(); } }
+#if ENABLE_RAYTRACING
         public virtual IEnumerable<VFXMapping> additionalMappings       { get { return Enumerable.Empty<VFXMapping>(); } }
+#endif
         public virtual IEnumerable<string> additionalDataHeaders        { get { return GetData().additionalHeaders; } }
         public virtual IEnumerable<string> additionalDefines            { get { return Enumerable.Empty<string>(); } }
         public virtual IEnumerable<KeyValuePair<string, VFXShaderWriter>> additionalReplacements { get { return Enumerable.Empty<KeyValuePair<string, VFXShaderWriter>>(); } }

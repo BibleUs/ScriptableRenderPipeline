@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Serialization;
 using UnityEditor.VFX;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 namespace UnityEditor.VFX
 {
@@ -439,7 +439,7 @@ namespace UnityEditor.VFX
                 return rs;
             }
         }
-
+#if ENABLE_RAYTRACING
         public override IEnumerable<VFXMapping> additionalMappings
         {
             get
@@ -449,5 +449,6 @@ namespace UnityEditor.VFX
                     yield return new VFXMapping("indirectDraw", 1);
             }
         }
+#endif
     }
 }

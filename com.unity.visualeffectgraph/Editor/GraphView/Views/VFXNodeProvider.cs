@@ -6,7 +6,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor.VFX;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 using UnityObject = UnityEngine.Object;
 

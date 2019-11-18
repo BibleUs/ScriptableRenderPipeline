@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using static UnityEditor.VFX.VFXAbstractRenderedOutput;
 using static UnityEngine.Rendering.HighDefinition.HDRenderQueue;
 

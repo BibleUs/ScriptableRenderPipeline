@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEditor.VFX;
 using UnityEngine.UIElements;
 using UnityEngine.Profiling;
@@ -69,13 +69,14 @@ namespace UnityEditor.VFX.UI
                         AddBlock(mPos, (d as VFXBlockProvider.NewBlockDescriptor).newBlock );
                     else
                     {
+#if ENABLE_RAYTRACING
                         var subgraphBlock = AssetDatabase.LoadAssetAtPath<VisualEffectSubgraphBlock>((d as VFXBlockProvider.SubgraphBlockDescriptor).item.path);
-
+#endif
                         int blockIndex = GetDragBlockIndex(mPos);
                         VFXBlock newModel = ScriptableObject.CreateInstance<VFXSubgraphBlock>();
-
+#if ENABLE_RAYTRACING
                         newModel.SetSettingValue("m_Subgraph", subgraphBlock);
-
+#endif
                         controller.AddBlock(blockIndex, newModel);
                     }
 
@@ -408,6 +409,7 @@ namespace UnityEditor.VFX.UI
             }
             else
             {
+#if ENABLE_RAYTRACING
                 var references = DragAndDrop.objectReferences.OfType<VisualEffectSubgraphBlock>();
 
                 if (references.Count() > 0 && (!controller.viewController.model.isSubgraph || !references.Any(t => t.GetResource().GetOrCreateGraph().subgraphDependencies.Contains(controller.viewController.model.subgraph) || t.GetResource() == controller.viewController.model)))
@@ -426,6 +428,7 @@ namespace UnityEditor.VFX.UI
                         }
                     }
                 }
+#endif
             }
         }
 
@@ -451,6 +454,7 @@ namespace UnityEditor.VFX.UI
             }
             else
             {
+#if ENABLE_RAYTRACING
                 var references = DragAndDrop.objectReferences.OfType<VisualEffectSubgraphBlock>();
 
                 if (references.Count() > 0 && (!controller.viewController.model.isSubgraph || !references.Any(t => t.GetResource().GetOrCreateGraph().subgraphDependencies.Contains(controller.viewController.model.subgraph) || t.GetResource() == controller.viewController.model)))
@@ -471,6 +475,7 @@ namespace UnityEditor.VFX.UI
 
                     evt.StopPropagation();
                 }
+#endif
             }
 
             m_DragStarted = false;

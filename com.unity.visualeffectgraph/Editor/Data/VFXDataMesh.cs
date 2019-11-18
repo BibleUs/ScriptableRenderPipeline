@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using System.Text;
 
 namespace UnityEditor.VFX
@@ -109,7 +109,7 @@ namespace UnityEditor.VFX
 
             return m_CachedMaterial;
         }
-
+#if ENABLE_RAYTRACING
         public override void FillDescs(
             List<VFXGPUBufferDesc> outBufferDescs,
             List<VFXTemporaryGPUBufferDesc> outTemporaryBufferDescs,
@@ -199,6 +199,7 @@ namespace UnityEditor.VFX
                 layer = uint.MaxValue,
             });
         }
+#endif
 
         public override void GenerateAttributeLayout(Dictionary<VFXContext, List<VFXContextLink>[]> effectiveFlowInputLinks)
         {

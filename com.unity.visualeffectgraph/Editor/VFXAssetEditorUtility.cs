@@ -4,7 +4,7 @@ using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.VFX;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEditor;
 using UnityEditor.VFX.UI;
 using UnityEditor.ProjectWindowCallback;
@@ -117,8 +117,10 @@ namespace UnityEditor
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
+#if ENABLE_RAYTRACING
                 var sg = CreateNew<VisualEffectSubgraphOperator>(pathName);
                 ProjectWindowUtil.FrameObjectInProjectWindow(sg.GetInstanceID());
+#endif
             }
         }
 
@@ -126,8 +128,10 @@ namespace UnityEditor
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
+#if ENABLE_RAYTRACING
                 var sg = CreateNew<VisualEffectSubgraphBlock>(pathName);
                 ProjectWindowUtil.FrameObjectInProjectWindow(sg.GetInstanceID());
+#endif
             }
         }
 
@@ -135,16 +139,18 @@ namespace UnityEditor
         public static void CreateVisualEffectSubgraphOperator()
         {
             string fileName = "New VFX Subgraph Operator.vfxoperator";
-
+#if ENABLE_RAYTRACING
             CreateVisualEffectSubgraph<VisualEffectSubgraphOperator, DoCreateNewSubgraphOperator>(fileName, templateOperatorSubgraphAssetName);
+#endif
         }
 
         [MenuItem("Assets/Create/Visual Effects/Visual Effect Subgraph Block", false, 309)]
         public static void CreateVisualEffectSubgraphBlock()
         {
             string fileName = "New VFX Subgraph Block.vfxblock";
-
+#if ENABLE_RAYTRACING
             CreateVisualEffectSubgraph<VisualEffectSubgraphBlock, DoCreateNewSubgraphBlock>(fileName, templateBlockSubgraphAssetName);
+#endif
         }
         
         public static void CreateVisualEffectSubgraph<T,U>(string fileName,string templateName) where U : EndNameEditAction

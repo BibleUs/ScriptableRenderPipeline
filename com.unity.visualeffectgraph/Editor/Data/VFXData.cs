@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEditor.VFX;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 namespace UnityEditor.VFX
 {
@@ -125,7 +125,9 @@ namespace UnityEditor.VFX
             if( m_Parent == null)
             {
                 string assetPath = AssetDatabase.GetAssetPath(this);
+#if ENABLE_RAYTRACING
                 m_Parent = VisualEffectResource.GetResourceAtPath(assetPath).GetOrCreateGraph();
+#endif
             }
         }
 
@@ -137,9 +139,11 @@ namespace UnityEditor.VFX
         }
 
         public virtual void FillDescs(
+#if ENABLE_RAYTRACING
             List<VFXGPUBufferDesc> outBufferDescs,
             List<VFXTemporaryGPUBufferDesc> outTemporaryBufferDescs,
             List<VFXEditorSystemDesc> outSystemDescs,
+#endif
             VFXExpressionGraph expressionGraph,
             Dictionary<VFXContext, VFXContextCompiledData> contextToCompiledData,
             Dictionary<VFXContext, int> contextSpawnToBufferIndex,

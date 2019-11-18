@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 
 using Object = UnityEngine.Object;
 using System.Text.RegularExpressions;

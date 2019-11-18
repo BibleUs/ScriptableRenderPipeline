@@ -6,7 +6,7 @@ using System.Linq;
 using UnityEditor.VFX;
 
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 
@@ -19,7 +19,7 @@ namespace UnityEditor.VFX
         public VFXExpressionMapper cpuMapper;
         public VFXExpressionMapper gpuMapper;
         public VFXUniformMapper uniformMapper;
-        public VFXMapping[] parameters;
+        //public VFXMapping[] parameters;
         public int indexInShaderSource;
     }
 
@@ -52,7 +52,7 @@ namespace UnityEditor.VFX
             public System.Text.StringBuilder content;
             public VFXCompilationMode compilMode;
         }
-
+/*
         private static VFXExpressionValueContainerDesc<T> CreateValueDesc<T>(VFXExpression exp, int expIndex)
         {
             var desc = new VFXExpressionValueContainerDesc<T>();
@@ -64,7 +64,7 @@ namespace UnityEditor.VFX
         {
             ((VFXExpressionValueContainerDesc<T>)desc).value = exp.Get<T>();
         }
-
+*/
         public uint FindReducedExpressionIndexFromSlotCPU(VFXSlot slot)
         {
             if (m_ExpressionGraph == null)
@@ -85,7 +85,7 @@ namespace UnityEditor.VFX
             var ouputExpression = m_ExpressionGraph.CPUExpressionsToReduced[targetExpression];
             return (uint)m_ExpressionGraph.GetFlattenedIndex(ouputExpression);
         }
-
+#if ENABLE_RAYTRACING
         private static void FillExpressionDescs(List<VFXExpressionDesc> outExpressionDescs, List<VFXExpressionValueContainerDesc> outValueDescs, VFXExpressionGraph graph)
         {
             var flatGraph = graph.FlattenedExpressions;
@@ -294,7 +294,7 @@ namespace UnityEditor.VFX
             }
             return data;
         }
-        
+#endif       
         void RecursePutSubgraphParent(Dictionary<VFXSubgraphContext, VFXSubgraphContext> parents, List<VFXSubgraphContext> subgraphs,VFXSubgraphContext subgraph)
         {
             foreach (var subSubgraph in subgraph.subChildren.OfType<VFXSubgraphContext>().Where(t => t.subgraph != null))
@@ -420,7 +420,7 @@ namespace UnityEditor.VFX
             }
             return result;
         }
-
+#if ENABLE_RAYTRACING
         private static void FillSpawner(Dictionary<VFXContext, SpawnInfo> outContextSpawnToSpawnInfo,
             List<VFXCPUBufferDesc> outCpuBufferDescs,
             List<VFXEditorSystemDesc> outSystemDescs,
@@ -538,7 +538,7 @@ namespace UnityEditor.VFX
                 });
             }
         }
-
+#endif
         struct SubgraphInfos
         {   
             public Dictionary<VFXSubgraphContext, VFXSubgraphContext> subgraphParents;
@@ -546,7 +546,7 @@ namespace UnityEditor.VFX
             public List<VFXSubgraphContext> subgraphs;
             public Dictionary<VFXContext,List<VFXContextLink>[]> contextEffectiveInputLinks;
         }
-
+#if ENABLE_RAYTRACING
         private static void FillEvent(List<VFXEventDesc> outEventDesc, Dictionary<VFXContext, SpawnInfo> contextSpawnToSpawnInfo, IEnumerable<VFXContext> contexts,ref SubgraphInfos subgraphInfos)
         {
             var contextEffectiveInputLinks = subgraphInfos.contextEffectiveInputLinks;
@@ -603,7 +603,7 @@ namespace UnityEditor.VFX
             outEventDesc.Clear();
             outEventDesc.AddRange(eventDescTemp.Select(o => new VFXEventDesc() { name = o.eventName, startSystems = o.playSystems.ToArray(), stopSystems = o.stopSystems.ToArray() }));
         }
-
+#endif
         private static void GenerateShaders(List<GeneratedCodeData> outGeneratedCodeData, VFXExpressionGraph graph, IEnumerable<VFXContext> contexts, Dictionary<VFXContext, VFXContextCompiledData> contextToCompiledData, VFXCompilationMode compilationMode)
         {
             Profiler.BeginSample("VFXEditor.GenerateShaders");
@@ -642,7 +642,7 @@ namespace UnityEditor.VFX
                 Profiler.EndSample();
             }
         }
-
+#if ENABLE_RAYTRACING
         private static void SaveShaderFiles(VisualEffectResource resource, List<GeneratedCodeData> generatedCodeData, Dictionary<VFXContext, VFXContextCompiledData> contextToCompiledData)
         {
             Profiler.BeginSample("VFXEditor.SaveShaderFiles");
@@ -727,7 +727,7 @@ namespace UnityEditor.VFX
             settings.motionVectorGenerationMode = subRenderers.Any(r => r.hasMotionVector) ? MotionVectorGenerationMode.Object : MotionVectorGenerationMode.Camera;
             return settings;
         }
-
+#endif
         private class VFXImplicitContextOfExposedExpression : VFXContext
         {
             private VFXExpressionMapper mapper;
@@ -763,7 +763,7 @@ namespace UnityEditor.VFX
                 return target == VFXDeviceTarget.CPU ? mapper : null;
             }
         }
-
+#if ENABLE_RAYTRACING
         static public Action<VisualEffectResource, bool> k_FnVFXResource_SetCompileInitialVariants = Find_FnVFXResource_SetCompileInitialVariants();
 
         static Action<VisualEffectResource, bool> Find_FnVFXResource_SetCompileInitialVariants()
@@ -778,7 +778,7 @@ namespace UnityEditor.VFX
             }
             return null;
         }
-
+#endif
         void ComputeEffectiveInputLinks(ref SubgraphInfos subgraphInfos, IEnumerable<VFXContext> compilableContexts)
         {
             var contextEffectiveInputLinks = subgraphInfos.contextEffectiveInputLinks;
@@ -791,7 +791,7 @@ namespace UnityEditor.VFX
                 ComputeEffectiveInputLinks(ref subgraphInfos,contextEffectiveInputLinks[context].SelectMany(t=>t).Select(t=>t.context).Where(t=>!contextEffectiveInputLinks.ContainsKey(t)));
             }
         }
-
+#if ENABLE_RAYTRACING
         public void Compile(VFXCompilationMode compilationMode, bool forceShaderValidation)
         {
             // Prevent doing anything ( and especially showing progesses ) in an empty graph.
@@ -991,9 +991,10 @@ namespace UnityEditor.VFX
                 EditorUtility.ClearProgressBar();
             }
         }
-
+#endif
         public void UpdateValues()
         {
+#if ENABLE_RAYTRACING
             var flatGraph = m_ExpressionGraph.FlattenedExpressions;
             var numFlattenedExpressions = flatGraph.Count;
 
@@ -1033,8 +1034,9 @@ namespace UnityEditor.VFX
             }
 
             m_Graph.visualEffectResource.SetValueSheet(m_ExpressionValues);
+#endif
         }
-
+#if ENABLE_RAYTRACING
         public VisualEffectResource visualEffectResource
         {
             get
@@ -1046,12 +1048,14 @@ namespace UnityEditor.VFX
                 return null;
             }
         }
-
+#endif
         private VFXGraph m_Graph;
 
         [NonSerialized]
         private VFXExpressionGraph m_ExpressionGraph;
+#if ENABLE_RAYTRACING
         [NonSerialized]
         private VFXExpressionValueContainerDesc[] m_ExpressionValues;
+#endif
     }
 }
