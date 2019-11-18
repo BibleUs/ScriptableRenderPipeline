@@ -16,7 +16,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             // TODO: Currently color temperature is not handled at runtime, need to expose useColorTemperature publicly
             Color cct = new Color(1.0f, 1.0f, 1.0f);
-#if UNITY_EDITOR
+#if UNITY_EDITOR && ENABLE_RAYTRACING
             if (add.useColorTemperature)
                 cct = Mathf.CorrelatedColorTemperatureToRGB(light.colorTemperature);
 #endif
@@ -104,14 +104,19 @@ namespace UnityEngine.Rendering.HighDefinition
                                 spot.coneAngle = light.spotAngle * Mathf.Deg2Rad;
                                 spot.innerConeAngle = light.spotAngle * Mathf.Deg2Rad * add.innerSpotPercent01;
                                 spot.falloff = add.applyRangeAttenuation ? FalloffType.InverseSquared : FalloffType.InverseSquaredNoRangeAttenuation;
+#if ENABLE_RAYTRACING
                                 spot.angularFalloff = AngularFalloffType.AnalyticAndInnerAngle;
+#endif
                                 lightDataGI.Init(ref spot);
+#if ENABLE_RAYTRACING
                                 lightDataGI.shape1 = (float)AngularFalloffType.AnalyticAndInnerAngle;
+#endif
                             }
                             break;
 
                         case SpotLightShape.Pyramid:
                             {
+#if ENABLE_RAYTRACING
                                 SpotLightPyramidShape pyramid;
                                 pyramid.instanceID = light.GetInstanceID();
                                 pyramid.shadow = light.shadows != LightShadows.None;
@@ -125,11 +130,13 @@ namespace UnityEngine.Rendering.HighDefinition
                                 pyramid.aspectRatio = add.aspectRatio;
                                 pyramid.falloff = add.applyRangeAttenuation ? FalloffType.InverseSquared : FalloffType.InverseSquaredNoRangeAttenuation;
                                 lightDataGI.Init(ref pyramid);
+#endif
                             }
                             break;
 
                         case SpotLightShape.Box:
                             {
+#if ENABLE_RAYTRACING
                                 SpotLightBoxShape box;
                                 box.instanceID = light.GetInstanceID();
                                 box.shadow = light.shadows != LightShadows.None;
@@ -142,6 +149,7 @@ namespace UnityEngine.Rendering.HighDefinition
                                 box.width = add.shapeWidth;
                                 box.height = add.shapeHeight;
                                 lightDataGI.Init(ref box);
+#endif
                             }
                             break;
 

@@ -101,7 +101,7 @@ namespace UnityEngine.Rendering.HighDefinition
             // If any resource or game-object is missing We stop right away
             if (invalidState)
                 return;
-
+#if ENABLE_RAYTRACING
             RayTracingShader forwardShader = m_Asset.renderPipelineRayTracingResources.forwardRaytracing;
             Shader raytracingMask = m_Asset.renderPipelineRayTracingResources.raytracingFlagMask;
             LightCluster lightClusterSettings = VolumeManager.instance.stack.GetComponent<LightCluster>();
@@ -170,6 +170,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             HDRenderPipeline hdrp = (RenderPipelineManager.currentPipeline as HDRenderPipeline);
             hdrp.PushFullScreenDebugTexture(hdCamera, cmd, m_DebugRaytracingTexture, FullScreenDebugMode.RecursiveRayTracing);
+#endif
         }
     }
 }

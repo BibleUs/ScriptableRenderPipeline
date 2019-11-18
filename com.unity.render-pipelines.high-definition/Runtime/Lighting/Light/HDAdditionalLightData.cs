@@ -1824,6 +1824,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 #endif
 
+#if ENABLE_RAYTRACING
         internal bool useColorTemperature
         {
             get => legacyLight.useColorTemperature;
@@ -1835,6 +1836,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 legacyLight.useColorTemperature = value;
             }
         }
+#endif
 
         // TODO: we might be able to get rid to that
         [System.NonSerialized]
@@ -2185,8 +2187,8 @@ namespace UnityEngine.Rendering.HighDefinition
             // m_Light.intensity is in luminance which is the value we need for emissive color
             Color value = legacyLight.color.linear * legacyLight.intensity;
 
-// We don't have access to the color temperature in the player because it's a private member of the Light component
-#if UNITY_EDITOR
+            // We don't have access to the color temperature in the player because it's a private member of the Light component
+#if UNITY_EDITOR && ENABLE_RAYTRACING
             if (useColorTemperature)
                 value *= Mathf.CorrelatedColorTemperatureToRGB(legacyLight.colorTemperature);
 #endif
@@ -2305,7 +2307,9 @@ namespace UnityEngine.Rendering.HighDefinition
             if (colorTemperature != -1)
             {
                 legacyLight.colorTemperature = colorTemperature;
+#if ENABLE_RAYTRACING
                 useColorTemperature = true;
+#endif
             }
 
             this.color = color;
@@ -2318,7 +2322,9 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <param name="enable"></param>
         public void EnableColorTemperature(bool enable)
         {
+#if ENABLE_RAYTRACING
             useColorTemperature = enable;
+#endif
         }
 
         /// <summary>

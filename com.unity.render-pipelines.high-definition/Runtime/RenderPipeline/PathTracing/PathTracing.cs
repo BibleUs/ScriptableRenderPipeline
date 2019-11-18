@@ -46,6 +46,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         public void RenderPathTracing(HDCamera hdCamera, CommandBuffer cmd, RTHandle outputTexture, ScriptableRenderContext renderContext, int frameCount)
         {
+#if ENABLE_RAYTRACING
             // First thing to check is: Do we have a valid ray-tracing environment?
             RayTracingShader pathTracingShader = m_Asset.renderPipelineRayTracingResources.pathTracing;
             PathTracing pathTracingSettings = VolumeManager.instance.stack.GetComponent<PathTracing>();
@@ -112,6 +113,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             // Run the computation
             cmd.DispatchRays(pathTracingShader, m_PathTracingRayGenShaderName, (uint)hdCamera.actualWidth, (uint)hdCamera.actualHeight, 1);
+#endif
         }
     }
 }

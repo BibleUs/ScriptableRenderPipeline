@@ -70,7 +70,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 SetDefaultAmbientOcclusionTexture(cmd);
                 return;
             }
-
+#if ENABLE_RAYTRACING
             RayTracingShader aoShader = m_PipelineRayTracingResources.aoRaytracing;
             var aoSettings = VolumeManager.instance.stack.GetComponent<AmbientOcclusion>();
             RayTracingSettings rayTracingSettings = VolumeManager.instance.stack.GetComponent<RayTracingSettings>();
@@ -114,9 +114,10 @@ namespace UnityEngine.Rendering.HighDefinition
                 // Run the computation
                 cmd.DispatchRays(aoShader, m_RayGenShaderName, (uint)hdCamera.actualWidth, (uint)hdCamera.actualHeight, (uint)hdCamera.viewCount);
             }
-
+#endif
             using (new ProfilingSample(cmd, "Filter Ambient Occlusion", CustomSamplerId.RaytracingAmbientOcclusion.GetSampler()))
             {
+#if ENABLE_RAYTRACING
                 if(aoSettings.denoise.value)
                 {
                     // Grab the history buffer
@@ -132,9 +133,12 @@ namespace UnityEngine.Rendering.HighDefinition
                     diffuseDenoiser.DenoiseBuffer(cmd, hdCamera, m_AOIntermediateBuffer1, outputTexture, aoSettings.denoiserRadius.value);
                 }
                 else
-                {
+                //{
+#else
                     HDUtils.BlitCameraTexture(cmd, m_AOIntermediateBuffer0, outputTexture);
-                }
+#endif
+                //}
+
             }
 
             // Bind the textures and the params

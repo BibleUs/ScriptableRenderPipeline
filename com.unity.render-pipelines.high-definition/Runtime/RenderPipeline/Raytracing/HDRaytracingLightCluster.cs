@@ -491,8 +491,10 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
 
                 Color value = light.color.linear * light.intensity;
+#if ENABLE_RAYTRACING
                 if (additionalLightData.useColorTemperature)
                     value *= Mathf.CorrelatedColorTemperatureToRGB(light.colorTemperature);
+#endif
                 lightData.color = new Vector3(value.r, value.g, value.b);
 
                 lightData.forward = light.transform.forward;
