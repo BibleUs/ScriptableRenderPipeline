@@ -21,7 +21,9 @@ namespace UnityEngine.Rendering.HighDefinition
         RTHandle m_ScreenSpaceShadowTextureArray;
 
         // Shaders
+#if ENABLE_RAYTRACING
         RayTracingShader m_ScreenSpaceShadowsRT;
+#endif
         ComputeShader m_ScreenSpaceShadowsCS;
         ComputeShader m_ScreenSpaceShadowsFilterCS;
 
@@ -64,8 +66,9 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 m_ScreenSpaceShadowsCS = m_Asset.renderPipelineRayTracingResources.shadowRaytracingCS;
                 m_ScreenSpaceShadowsFilterCS = m_Asset.renderPipelineRayTracingResources.shadowFilterCS;
+#if ENABLE_RAYTRACING
                 m_ScreenSpaceShadowsRT = m_Asset.renderPipelineRayTracingResources.shadowRaytracingRT;
-
+#endif
                 // Directional shadow kernels
                 m_ClearShadowTexture = m_ScreenSpaceShadowsCS.FindKernel("ClearShadowTexture");
                 m_OutputShadowTextureKernel = m_ScreenSpaceShadowsCS.FindKernel("OutputShadowTexture");
@@ -187,9 +190,10 @@ namespace UnityEngine.Rendering.HighDefinition
                         cmd.DispatchCompute(m_ScreenSpaceShadowsCS, m_ClearShadowTexture, numTilesX, numTilesY, hdCamera.viewCount);
 
                         // Grab and bind the acceleration structure for the target camera
+#if ENABLE_RAYTRACING
                         RayTracingAccelerationStructure accelerationStructure = RequestAccelerationStructure();
                         cmd.SetRayTracingAccelerationStructure(m_ScreenSpaceShadowsRT, HDShaderIDs._RaytracingAccelerationStructureName, accelerationStructure);
-
+#endif
                         // Inject the ray-tracing sampling data
                         m_BlueNoise.BindDitheredRNGData8SPP(cmd);
 
@@ -199,8 +203,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
                         // Inject the ray generation data
                         RayTracingSettings rayTracingSettings = VolumeManager.instance.stack.GetComponent<RayTracingSettings>();
+#if ENABLE_RAYTRACING
                         cmd.SetRayTracingFloatParam(m_ScreenSpaceShadowsRT, HDShaderIDs._RaytracingRayBias, rayTracingSettings.rayBias.value);
-
+#endif
                         // Loop through the samples of this frame
                         for (int sampleIdx = 0; sampleIdx < m_CurrentSunLightAdditionalLightData.numRayTracingSamples; ++sampleIdx)
                         {
@@ -219,7 +224,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                             // Generate a new direction
                             cmd.DispatchCompute(m_ScreenSpaceShadowsCS, m_RaytracingDirectionalShadowSample, numTilesX, numTilesY, hdCamera.viewCount);
-
+#if ENABLE_RAYTRACING
                             // Define the shader pass to use for the shadow pass
                             cmd.SetRayTracingShaderPass(m_ScreenSpaceShadowsRT, "VisibilityDXR");
 
@@ -239,6 +244,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                             // Evaluate the visibility
                             cmd.DispatchRays(m_ScreenSpaceShadowsRT, m_RayGenDirectionalShadowSingleName, (uint)hdCamera.actualWidth, (uint)hdCamera.actualHeight, (uint)hdCamera.viewCount);
+#endif
                         }
 
                         // Grab the history buffer for shadows
@@ -278,7 +284,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 // Grab the history buffer
                 RTHandle shadowHistoryArray = hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.RaytracedShadow)
                     ?? hdCamera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.RaytracedShadow, ShadowHistoryBufferAllocatorFunction, 1);
-
+#if ENABLE_RAYTRACING
                 // Grab the acceleration structure for the target camera
                 RayTracingAccelerationStructure accelerationStructure = RequestAccelerationStructure();
                 // Set the acceleration structure for the pass
@@ -286,7 +292,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 // Define the shader pass to use for the reflection pass
                 cmd.SetRayTracingShaderPass(m_ScreenSpaceShadowsRT, "VisibilityDXR");
-
+#endif
                 // Inject the ray-tracing sampling data
                 m_BlueNoise.BindDitheredRNGData8SPP(cmd);
 
@@ -385,6 +391,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 // Set ray count texture
                 RayCountManager rayCountManager = GetRayCountManager();
+#if ENABLE_RAYTRACING
                 cmd.SetRayTracingIntParam(m_ScreenSpaceShadowsRT, HDShaderIDs._RayCountEnabled, rayCountManager.RayCountIsEnabled());
                 cmd.SetRayTracingTextureParam(m_ScreenSpaceShadowsRT, HDShaderIDs._RayCountTexture, rayCountManager.GetRayCountTexture());
 
@@ -448,6 +455,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     // Evaluate the intersection
                     cmd.DispatchRays(m_ScreenSpaceShadowsRT, m_RayGenAreaShadowSingleName, (uint)hdCamera.actualWidth, (uint)hdCamera.actualHeight, (uint)hdCamera.viewCount);
                 }
+#endif
 
                 /*
                 // This should go in tier2
@@ -563,7 +571,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 cmd.DispatchCompute(m_ScreenSpaceShadowsCS, m_ClearShadowTexture, numTilesX, numTilesY, hdCamera.viewCount);
 
                 RayTracingSettings rayTracingSettings = VolumeManager.instance.stack.GetComponent<RayTracingSettings>();
+#if ENABLE_RAYTRACING
                 cmd.SetRayTracingFloatParam(m_ScreenSpaceShadowsRT, HDShaderIDs._RaytracingRayBias, rayTracingSettings.rayBias.value);
+#endif
 
                 // Loop through the samples of this frame
                 for (int sampleIdx = 0; sampleIdx < additionalLightData.numRayTracingSamples; ++sampleIdx)
@@ -597,7 +607,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                     // Generate a new direction
                     cmd.DispatchCompute(m_ScreenSpaceShadowsCS, shadowKernel, numTilesX, numTilesY, hdCamera.viewCount);
-
+#if ENABLE_RAYTRACING
                     // Define the shader pass to use for the shadow pass
                     cmd.SetRayTracingShaderPass(m_ScreenSpaceShadowsRT, "VisibilityDXR");
 
@@ -618,6 +628,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                     // Evaluate the visibility
                     cmd.DispatchRays(m_ScreenSpaceShadowsRT, m_RayGenShadowSegmentSingleName, (uint)hdCamera.actualWidth, (uint)hdCamera.actualHeight, (uint)hdCamera.viewCount);
+#endif
                 }
 
                 // Apply the simple denoiser (if required)

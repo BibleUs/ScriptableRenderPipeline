@@ -49,7 +49,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 break;
             }
         }
-
+#if ENABLE_RAYTRACING
         void BindRayTracedReflectionData(CommandBuffer cmd, HDCamera hdCamera, RayTracingShader reflectionShader, ScreenSpaceReflection settings, LightCluster lightClusterSettings, RayTracingSettings rtSettings)
         {
             // Grab the acceleration structures and the light cluster to use
@@ -109,7 +109,7 @@ namespace UnityEngine.Rendering.HighDefinition
             // Set the data for the ray miss
             cmd.SetRayTracingTextureParam(reflectionShader, HDShaderIDs._SkyTexture, m_SkyManager.GetSkyReflection(hdCamera));
         }
-
+#endif
         DeferredLightingRTParameters PrepareReflectionDeferredLightingRTParameters(HDCamera hdCamera)
         {
             DeferredLightingRTParameters deferredParameters = new DeferredLightingRTParameters();
@@ -139,7 +139,7 @@ namespace UnityEngine.Rendering.HighDefinition
             deferredParameters.height = hdCamera.actualHeight;
             deferredParameters.viewCount = hdCamera.viewCount;
             deferredParameters.fov = hdCamera.camera.fieldOfView;
-
+#if ENABLE_RAYTRACING
             // Compute buffers
             deferredParameters.rayBinResult = m_RayBinResult;
             deferredParameters.rayBinSizeResult = m_RayBinSizeResult;
@@ -157,7 +157,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 deferredParameters.rayBinning = false;
                 Debug.LogWarning("Ray binning is not supported with XR single-pass rendering!");
             }
-
+#endif
             return deferredParameters;
         }
 
@@ -165,7 +165,9 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             // Fetch the required resources
             BlueNoise blueNoise = GetBlueNoiseManager();
+#if ENABLE_RAYTRACING
             RayTracingShader reflectionShaderRT = m_Asset.renderPipelineRayTracingResources.reflectionRaytracingRT;
+#endif
             ComputeShader reflectionShaderCS = m_Asset.renderPipelineRayTracingResources.reflectionRaytracingCS;
             ComputeShader reflectionFilter = m_Asset.renderPipelineRayTracingResources.reflectionBilateralFilterCS;
 
@@ -237,6 +239,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
                 else
                 {
+#if ENABLE_RAYTRACING
                     // Bind all the required data for ray tracing
                     BindRayTracedReflectionData(cmd, hdCamera, reflectionShaderRT, settings, lightClusterSettings, rtSettings);
 
@@ -250,6 +253,7 @@ namespace UnityEngine.Rendering.HighDefinition
                         // Run the computation
                         cmd.DispatchRays(reflectionShaderRT, m_RayGenReflectionHalfResName, (uint)(hdCamera.actualWidth / 2), (uint)(hdCamera.actualHeight / 2), (uint)hdCamera.viewCount);
                     }
+#endif
                 }
 
                 // Fetch the right filter to use
@@ -302,6 +306,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         void RenderReflectionsT2(HDCamera hdCamera, CommandBuffer cmd, RTHandle outputTexture, ScriptableRenderContext renderContext, int frameCount)
         {
+#if ENABLE_RAYTRACING
             // Fetch the shaders that we will be using
             ComputeShader reflectionFilter = m_Asset.renderPipelineRayTracingResources.reflectionBilateralFilterCS;
             RayTracingShader reflectionShader = m_Asset.renderPipelineRayTracingResources.reflectionRaytracingRT;
@@ -345,6 +350,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     HDUtils.BlitCameraTexture(cmd, m_ReflIntermediateTexture0, outputTexture);
                 }
             }
+#endif
         }
     }
 }

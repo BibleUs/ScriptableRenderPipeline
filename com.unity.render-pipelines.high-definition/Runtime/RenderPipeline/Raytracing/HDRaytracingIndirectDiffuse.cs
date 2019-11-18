@@ -67,7 +67,9 @@ namespace UnityEngine.Rendering.HighDefinition
                     break;
                 case RenderPipelineSettings.RaytracingTier.Tier2:
                     {
+#if ENABLE_RAYTRACING
                         RenderIndirectDiffuseT2(hdCamera, cmd, renderContext, frameCount);
+#endif
                     }
                     break;
             }
@@ -137,6 +139,7 @@ namespace UnityEngine.Rendering.HighDefinition
             // Compute buffers
             deferredParameters.rayBinResult = m_RayBinResult;
             deferredParameters.rayBinSizeResult = m_RayBinSizeResult;
+#if ENABLE_RAYTRACING
             deferredParameters.accelerationStructure = RequestAccelerationStructure();
             deferredParameters.lightCluster = RequestLightCluster();
 
@@ -151,6 +154,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 deferredParameters.rayBinning = false;
                 Debug.LogWarning("Ray binning is not supported with XR single-pass rendering!");
             }
+#endif
 
             return deferredParameters;
         }
@@ -212,6 +216,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
                 else
                 {
+#if ENABLE_RAYTRACING
                     RayTracingShader indirectDiffuseRT = m_Asset.renderPipelineRayTracingResources.indirectDiffuseRaytracingRT;
 
                     BindRayTracedIndirectDiffuseData(cmd, hdCamera, indirectDiffuseRT, settings, lightClusterSettings, rtSettings);
@@ -224,6 +229,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     cmd.DispatchRays(indirectDiffuseRT, m_RayGenIndirectDiffuseFullResName, (uint)hdCamera.actualWidth, (uint)hdCamera.actualHeight, (uint)hdCamera.viewCount);
 
                     CoreUtils.SetKeyword(cmd, "DIFFUSE_LIGHTING_ONLY", false);
+#endif
                 }
             }
 
@@ -264,7 +270,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
             }
         }
-
+#if ENABLE_RAYTRACING
         public void BindRayTracedIndirectDiffuseData(CommandBuffer cmd, HDCamera hdCamera, RayTracingShader indirectDiffuseShader, GlobalIllumination settings, LightCluster lightClusterSettings, RayTracingSettings rtSettings)
         {
             // Grab the acceleration structures and the light cluster to use
@@ -350,6 +356,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
             }
         }
+#endif
 
         public void DenoiseIndirectDiffuseBuffer(HDCamera hdCamera, CommandBuffer cmd, GlobalIllumination settings)
         {

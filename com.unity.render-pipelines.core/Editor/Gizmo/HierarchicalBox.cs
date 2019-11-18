@@ -254,7 +254,7 @@ namespace UnityEditor.Rendering
             var backPosition = center + size.z * .5f * Vector3.back;
 
             var theChangedFace = NamedFace.None;
-
+#if ENABLE_RAYTRACING
             EditorGUI.BeginChangeCheck();
             Slider1D(m_ControlIDs[(int)NamedFace.Left], ref leftPosition, Vector3.left, EditorSnapSettings.scale, GetHandleColor(NamedFace.Left));
             if (EditorGUI.EndChangeCheck())
@@ -284,7 +284,38 @@ namespace UnityEditor.Rendering
             Slider1D(m_ControlIDs[(int)NamedFace.Back], ref backPosition, Vector3.back, EditorSnapSettings.scale, GetHandleColor(NamedFace.Back));
             if (EditorGUI.EndChangeCheck())
                 theChangedFace = NamedFace.Back;
+#else
+            float editorSnapSettingsTEST_scale = 1;
+            EditorGUI.BeginChangeCheck();
+            Slider1D(m_ControlIDs[(int)NamedFace.Left], ref leftPosition, Vector3.left, editorSnapSettingsTEST_scale, GetHandleColor(NamedFace.Left));
+            if (EditorGUI.EndChangeCheck())
+                theChangedFace = NamedFace.Left;
 
+            EditorGUI.BeginChangeCheck();
+            Slider1D(m_ControlIDs[(int)NamedFace.Right], ref rightPosition, Vector3.right, editorSnapSettingsTEST_scale, GetHandleColor(NamedFace.Right));
+            if (EditorGUI.EndChangeCheck())
+                theChangedFace = NamedFace.Right;
+
+            EditorGUI.BeginChangeCheck();
+            Slider1D(m_ControlIDs[(int)NamedFace.Top], ref topPosition, Vector3.up, editorSnapSettingsTEST_scale, GetHandleColor(NamedFace.Top));
+            if (EditorGUI.EndChangeCheck())
+                theChangedFace = NamedFace.Top;
+
+            EditorGUI.BeginChangeCheck();
+            Slider1D(m_ControlIDs[(int)NamedFace.Bottom], ref bottomPosition, Vector3.down, editorSnapSettingsTEST_scale, GetHandleColor(NamedFace.Bottom));
+            if (EditorGUI.EndChangeCheck())
+                theChangedFace = NamedFace.Bottom;
+
+            EditorGUI.BeginChangeCheck();
+            Slider1D(m_ControlIDs[(int)NamedFace.Front], ref frontPosition, Vector3.forward, editorSnapSettingsTEST_scale, GetHandleColor(NamedFace.Front));
+            if (EditorGUI.EndChangeCheck())
+                theChangedFace = NamedFace.Front;
+
+            EditorGUI.BeginChangeCheck();
+            Slider1D(m_ControlIDs[(int)NamedFace.Back], ref backPosition, Vector3.back, editorSnapSettingsTEST_scale, GetHandleColor(NamedFace.Back));
+            if (EditorGUI.EndChangeCheck())
+                theChangedFace = NamedFace.Back;
+#endif
             if (EditorGUI.EndChangeCheck())
             {
                 float delta = 0f;

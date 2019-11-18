@@ -38,7 +38,9 @@ namespace UnityEngine.Rendering.HighDefinition
     public partial class HDRenderPipeline
     {
         // Data used for runtime evaluation
+#if ENABLE_RAYTRACING
         RayTracingAccelerationStructure m_CurrentRAS = new RayTracingAccelerationStructure();
+#endif
         HDRaytracingLightCluster m_RayTracingLightCluster = new HDRaytracingLightCluster();
         HDRayTracingLights m_RayTracingLights = new HDRayTracingLights();
         bool m_ValidRayTracingState = false;
@@ -177,9 +179,10 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
 
                 if (instanceFlag == 0) return;
-
+#if ENABLE_RAYTRACING
                 // Add it to the acceleration structure
                 m_CurrentRAS.AddInstance(currentRenderer, subMeshMask: subMeshFlagArray, subMeshTransparencyFlags: subMeshCutoffArray, enableTriangleCulling: singleSided, mask: instanceFlag);
+#endif
             }
         }
         public void BuildRayTracingAccelerationStructure()
@@ -193,8 +196,11 @@ namespace UnityEngine.Rendering.HighDefinition
             m_RayTracingLights.hdLightArray.Clear();
             m_RayTracingLights.reflectionProbeArray.Clear();
             m_RayTracingLights.lightCount = 0;
+#if ENABLE_RAYTRACING
             m_CurrentRAS.Dispose();
+
             m_CurrentRAS = new RayTracingAccelerationStructure();
+#endif
             m_ValidRayTracingState = false;
             m_ValidRayTracingCluster = false;
 
@@ -333,10 +339,10 @@ namespace UnityEngine.Rendering.HighDefinition
                                 recursiveSettings.enable.value, recursiveSettings.layerMask.value,
                                 pathTracingSettings.enable.value, pathTracingSettings.layerMask.value);
             }
-
+#if ENABLE_RAYTRACING
             // build the acceleration structure
             m_CurrentRAS.Build();
-
+#endif
             // tag the structures as valid
             m_ValidRayTracingState = true;
         }
@@ -354,7 +360,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 m_ValidRayTracingCluster = true;
             }
         }
-
+#if ENABLE_RAYTRACING
         internal RayTracingAccelerationStructure RequestAccelerationStructure()
         {
             if (m_ValidRayTracingState)
@@ -363,7 +369,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
             return null;
         }
-
+#endif
         internal HDRaytracingLightCluster RequestLightCluster()
         {
             if (m_ValidRayTracingCluster)

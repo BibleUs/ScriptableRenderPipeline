@@ -39,7 +39,7 @@ namespace UnityEngine.Rendering.HighDefinition
             legacyStereoEye = (Camera.StereoscopicEye)(-1);
         }
 
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
         internal XRView(XRDisplaySubsystem.XRRenderPass renderPass, XRDisplaySubsystem.XRRenderParameter renderParameter)
         {
             projMatrix = renderParameter.projection;
@@ -130,7 +130,7 @@ namespace UnityEngine.Rendering.HighDefinition
             AddViewInternal(new XRView(proj, view, vp));
         }
 
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
         internal static XRPass Create(XRDisplaySubsystem.XRRenderPass xrRenderPass, int multipassId, int textureArraySlice, ScriptableCullingParameters cullingParameters, Material occlusionMeshMaterial)
         {
             XRPass passInfo = GenericPool<XRPass>.Get();
@@ -201,7 +201,9 @@ namespace UnityEngine.Rendering.HighDefinition
                     if (viewCount <= TextureXR.slices)
                     {
                         cmd.EnableShaderKeyword("STEREO_INSTANCING_ON");
+#if ENABLE_RAYTRACING
                         cmd.SetInstanceMultiplier((uint)viewCount);
+#endif
                     }
                     else
                     {
@@ -224,7 +226,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 else
                 {
                     cmd.DisableShaderKeyword("STEREO_INSTANCING_ON");
+#if ENABLE_RAYTRACING
                     cmd.SetInstanceMultiplier(1);
+#endif
                 }
             }
         }

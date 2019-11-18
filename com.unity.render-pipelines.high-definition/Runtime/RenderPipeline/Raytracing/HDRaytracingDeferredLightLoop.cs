@@ -31,11 +31,15 @@ namespace UnityEngine.Rendering.HighDefinition
             // Compute buffers
             public ComputeBuffer rayBinResult;
             public ComputeBuffer rayBinSizeResult;
+#if ENABLE_RAYTRACING
             public RayTracingAccelerationStructure accelerationStructure;
+#endif
             public HDRaytracingLightCluster lightCluster;
 
             // Shaders
+#if ENABLE_RAYTRACING
             public RayTracingShader gBufferRaytracingRT;
+#endif
             public ComputeShader deferredRaytracingCS;
             public ComputeShader rayBinningCS;
         }
@@ -196,7 +200,7 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 BinRays(cmd, parameters, buffers.directionBuffer,  texWidth, texHeight);
             }
-
+#if ENABLE_RAYTRACING
             // Define the shader pass to use for the reflection pass
             cmd.SetRayTracingShaderPass(parameters.gBufferRaytracingRT, "GBufferDXR");
 
@@ -263,7 +267,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 cmd.SetRayTracingIntParams(parameters.gBufferRaytracingRT, "_RaytracingHalfResolution", parameters.halfResolution ? 1 : 0);
                 cmd.DispatchRays(parameters.gBufferRaytracingRT, m_RayGenGBuffer, widthResolution, heightResolution, (uint)parameters.viewCount);
             }
-
+#endif
             // Disable the diffuse lighting only flag
             CoreUtils.SetKeyword(cmd, "DIFFUSE_LIGHTING_ONLY", false);
 

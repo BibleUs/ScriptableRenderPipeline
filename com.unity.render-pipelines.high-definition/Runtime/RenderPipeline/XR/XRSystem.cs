@@ -33,7 +33,7 @@ namespace UnityEngine.Rendering.HighDefinition
         // Store active passes and avoid allocating memory every frames
         List<(Camera, XRPass)> framePasses = new List<(Camera, XRPass)>();
 
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
         // XR SDK display interface
         static List<XRDisplaySubsystem> displayList = new List<XRDisplaySubsystem>();
         XRDisplaySubsystem display = null;
@@ -46,7 +46,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         internal XRSystem(RenderPipelineResources.ShaderResources shaders)
         {
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
             RefreshXrSdk();
 
             if (shaders != null)
@@ -59,7 +59,7 @@ namespace UnityEngine.Rendering.HighDefinition
             TextureXR.maxViews = GetMaxViews();
         }
 
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
         // With XR SDK: disable legacy VR system before rendering first frame
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
         internal static void XRSystemInit()
@@ -76,7 +76,7 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             int maxViews = 1;
 
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
             if (display != null)
             {
                 // XRTODO : replace by API from XR SDK, assume we have 2 slices until then
@@ -110,7 +110,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 if (camera == null)
                     continue;
 
-#if ENABLE_VR && ENABLE_VR_MODULE
+#if ENABLE_VR && ENABLE_VR_MODULE && ENABLE_RAYTRACING
                 // Read XR SDK or legacy settings
                 bool xrEnabled = xrSdkActive || (camera.stereoEnabled && XRGraphics.enabled);
 
@@ -160,7 +160,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         bool RefreshXrSdk()
         {
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
             SubsystemManager.GetInstances(displayList);
 
             if (displayList.Count > 0)
@@ -213,7 +213,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
         }
 
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
         void CreateLayoutFromXrSdk(Camera camera, bool singlePassAllowed)
         {
             bool CanUseSinglePass(XRDisplaySubsystem.XRRenderPass renderPass)
@@ -271,7 +271,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         internal void Cleanup()
         {
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
             CoreUtils.Destroy(occlusionMeshMaterial);
             CoreUtils.Destroy(mirrorViewMaterial);
 #endif
@@ -284,7 +284,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         internal void RenderMirrorView(CommandBuffer cmd)
         {
-#if ENABLE_VR && ENABLE_XR_MODULE
+#if ENABLE_VR && ENABLE_XR_MODULE && ENABLE_RAYTRACING
             if (display == null || !display.running)
                 return;
 

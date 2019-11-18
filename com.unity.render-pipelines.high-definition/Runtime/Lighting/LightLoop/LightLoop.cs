@@ -3082,8 +3082,10 @@ namespace UnityEngine.Rendering.HighDefinition
             public int              viewCount;
 
             public bool             rayTracingEnabled;
+#if ENABLE_RAYTRACING
             public RayTracingShader contactShadowsRTS;
             public RayTracingAccelerationStructure accelerationStructure;
+#endif
             public float            rayTracingBias;
             public int              actualWidth;
             public int              actualHeight;
@@ -3099,9 +3101,11 @@ namespace UnityEngine.Rendering.HighDefinition
             if (hdCamera.frameSettings.IsEnabled(FrameSettingsField.RayTracing))
             {
                 RayTracingSettings raySettings = VolumeManager.instance.stack.GetComponent<RayTracingSettings>();
+#if ENABLE_RAYTRACING
                 parameters.contactShadowsRTS = m_Asset.renderPipelineRayTracingResources.shadowRaytracingRT;
                 parameters.rayTracingBias = raySettings.rayBias.value;
                 parameters.accelerationStructure = RequestAccelerationStructure();
+#endif
 
                 parameters.actualWidth = hdCamera.actualWidth;
                 parameters.actualHeight = hdCamera.actualHeight;
@@ -3151,6 +3155,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             if (parameters.rayTracingEnabled)
             {
+#if ENABLE_RAYTRACING
                 cmd.SetRayTracingShaderPass(parameters.contactShadowsRTS, "VisibilityDXR");
                 cmd.SetRayTracingFloatParam(parameters.contactShadowsRTS, HDShaderIDs._RaytracingRayBias, parameters.rayTracingBias);
                 cmd.SetRayTracingAccelerationStructure(parameters.contactShadowsRTS, HDShaderIDs._RaytracingAccelerationStructureName, parameters.accelerationStructure);
@@ -3168,6 +3173,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 cmd.SetRayTracingTextureParam(parameters.contactShadowsRTS, HDShaderIDs._ContactShadowTextureUAV, contactShadowRT);
 
                 cmd.DispatchRays(parameters.contactShadowsRTS, "RayGenContactShadows", (uint)parameters.actualWidth, (uint)parameters.actualHeight, (uint)parameters.viewCount);
+#endif
             }
         }
 

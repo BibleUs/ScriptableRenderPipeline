@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-using UnityEngine.VFX;
+//using UnityEngine.VFX;
+using UnityEngine.Experimental.VFX;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -649,7 +650,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 overridesOtherLightingSettings = true,
                 editableMaterialRenderQueue = false
                 // Enlighten is deprecated in 2019.3 and above
-                , enlighten = false
+                //, enlighten = false
             };
 
             Lightmapping.SetDelegate(GlobalIlluminationUtils.hdLightsDelegate);
@@ -1228,9 +1229,11 @@ namespace UnityEngine.Rendering.HighDefinition
 
                     dynResHandler.SetCurrentCameraRequest(cameraRequestedDynamicRes);
                     RTHandles.SetHardwareDynamicResolutionState(dynResHandler.HardwareDynamicResIsEnabled());
-
+#if ENABLE_RAYTRACING
                     VFXManager.PrepareCamera(camera);
-
+#else
+                    VFXManager.IsCameraBufferNeeded(camera);
+#endif
                     // Reset pooled variables
                     cameraSettings.Clear();
                     cameraPositionSettings.Clear();
@@ -1832,8 +1835,11 @@ namespace UnityEngine.Rendering.HighDefinition
             SetupCameraProperties(hdCamera, renderContext, cmd);
 
             PushGlobalParams(hdCamera, cmd);
+#if ENABLE_RAYTRACING
             VFXManager.ProcessCameraCommand(camera, cmd);
-
+#else
+            VFXManager.ProcessCamera(camera);
+#endif
             // TODO: Find a correct place to bind these material textures
             // We have to bind the material specific global parameters in this mode
             foreach (var material in m_MaterialList)

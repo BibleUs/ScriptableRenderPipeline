@@ -5,25 +5,38 @@ namespace UnityEngine.Rendering.HighDefinition
 {
     public partial class HDRenderPipelineRayTracingResources : ScriptableObject
     {
-        // Reflection
+#if ENABLE_RAYTRACING
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Reflections/RaytracingReflections.raytrace")]
         public RayTracingShader reflectionRaytracingRT;
+        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Shadows/RaytracingShadow.raytrace")]
+        public RayTracingShader shadowRaytracingRT;
+        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingRenderer.raytrace")]
+        public RayTracingShader forwardRaytracing;
+        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/IndirectDiffuse/RaytracingIndirectDiffuse.raytrace")]
+        public RayTracingShader indirectDiffuseRaytracingRT;
+        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingAmbientOcclusion.raytrace")]
+        public RayTracingShader aoRaytracing;
+        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Deferred/RaytracingGBuffer.raytrace")]
+        public RayTracingShader gBufferRaytracingRT;
+        [Reload("Runtime/RenderPipeline/PathTracing/Shaders/PathTracingMain.raytrace")]
+        public RayTracingShader pathTracing;
+#endif
+        // Reflection
+
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Reflections/RaytracingReflections.compute")]
         public ComputeShader reflectionRaytracingCS;
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingReflectionFilter.compute")]
         public ComputeShader reflectionBilateralFilterCS;
 
         // Shadows
-        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Shadows/RaytracingShadow.raytrace")]
-        public RayTracingShader shadowRaytracingRT;
+        
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Shadows/RaytracingShadow.compute")]
         public ComputeShader shadowRaytracingCS;
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Shadows/RaytracingShadowFilter.compute")]
         public ComputeShader shadowFilterCS;
 
         // Recursive tracing
-        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingRenderer.raytrace")]
-        public RayTracingShader forwardRaytracing;
+        
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingFlagMask.shader")]
         public Shader raytracingFlagMask;
 
@@ -36,14 +49,12 @@ namespace UnityEngine.Rendering.HighDefinition
         public ComputeShader lightClusterDebugCS;
         
         // Indirect Diffuse
-        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/IndirectDiffuse/RaytracingIndirectDiffuse.raytrace")]
-        public RayTracingShader indirectDiffuseRaytracingRT;
+        
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/IndirectDiffuse/RaytracingIndirectDiffuse.compute")]
         public ComputeShader indirectDiffuseRaytracingCS;
 
         // Ambient Occlusion
-        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingAmbientOcclusion.raytrace")]
-        public RayTracingShader aoRaytracing;
+        
 
         // Denoising
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Denoising/TemporalFilter.compute")]
@@ -54,14 +65,12 @@ namespace UnityEngine.Rendering.HighDefinition
         public ComputeShader diffuseDenoiserCS;
 
         // Deferred Lighting
-        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Deferred/RaytracingGBuffer.raytrace")]
-        public RayTracingShader gBufferRaytracingRT;
+        
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Deferred/RaytracingDeferred.compute")]
         public ComputeShader deferredRaytracingCS;
 
         // Path Tracing
-        [Reload("Runtime/RenderPipeline/PathTracing/Shaders/PathTracingMain.raytrace")]
-        public RayTracingShader pathTracing;
+        
 
         // Ray Binning
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Common/RayBinning.compute")]
@@ -71,7 +80,7 @@ namespace UnityEngine.Rendering.HighDefinition
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/CountTracedRays.compute")]
         public ComputeShader countTracedRays;
 
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
         [UnityEditor.CustomEditor(typeof(HDRenderPipelineRayTracingResources))]
         class RenderPipelineRayTracingResourcesEditor : UnityEditor.Editor
         {
@@ -89,6 +98,6 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
             }
         }
-    #endif
+#endif
     }
 }

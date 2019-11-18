@@ -19,6 +19,7 @@ namespace UnityEditor.Rendering
         static bool DispatchRemoveComponent<T>(T component)
             where T : Component
         {
+#if ENABLE_RAYTRACING
             Type type = RenderPipelineEditorUtility.FetchFirstCompatibleTypeUsingScriptableRenderPipelineExtension<IRemoveAdditionalDataContextualMenu<T>>();
             if (type != null)
             {
@@ -26,6 +27,7 @@ namespace UnityEditor.Rendering
                 instance.RemoveComponent(component);
                 return true;
             }
+#endif
             return false;
         }
     }
