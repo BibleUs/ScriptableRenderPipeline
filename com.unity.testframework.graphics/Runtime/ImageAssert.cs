@@ -12,7 +12,6 @@ using UnityEngine.TestTools.Constraints;
 using Is = UnityEngine.TestTools.Constraints.Is;
 using UnityEngine.Networking.PlayerConnection;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace UnityEngine.TestTools.Graphics
 {
@@ -61,10 +60,7 @@ namespace UnityEngine.TestTools.Graphics
             // This PR adds a dummy rendered frame before doing the real rendering and compare images ( test already has frame delay, but there is no rendering )
             int dummyRenderedFrameCount = 1;
 
-            RenderTextureDescriptor desc = new RenderTextureDescriptor(width, height, settings.UseHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default, 24);
-            desc.sRGB = QualitySettings.activeColorSpace == ColorSpace.Linear;
-
-            var rt = RenderTexture.GetTemporary(desc);
+            var rt = RenderTexture.GetTemporary(width, height, 24);
             Texture2D actual = null;
             try
             {
@@ -81,22 +77,9 @@ namespace UnityEngine.TestTools.Graphics
 					if (dummyRenderedFrameCount == i)
 					{
 						actual = new Texture2D(width, height, format, false);
-                        RenderTexture dummy = null;
-
-                        if (settings.UseHDR)
-                        {
-                            desc.colorFormat = RenderTextureFormat.Default;
-                            dummy = RenderTexture.GetTemporary(desc);
-                            UnityEngine.Graphics.Blit(rt, dummy);
-                        }
-                        else
-                            RenderTexture.active = rt;
-
+						RenderTexture.active = rt;
 						actual.ReadPixels(new Rect(0, 0, width, height), 0, 0);
 						RenderTexture.active = null;
-
-                        if (dummy != null)
-                            RenderTexture.ReleaseTemporary(dummy);
 
 						actual.Apply();
 
@@ -177,8 +160,6 @@ namespace UnityEngine.TestTools.Graphics
                         diffImage.SetPixels32(diffPixelsArray, 0);
                         diffImage.Apply(false);
 
-                        TestContext.CurrentContext.Test.Properties.Set("DiffImage", Convert.ToBase64String(diffImage.EncodeToPNG()) );
-
                         failedImageMessage.DiffImage = diffImage.EncodeToPNG();
                         failedImageMessage.ExpectedImage = expected.EncodeToPNG();
                         throw;
@@ -193,7 +174,6 @@ namespace UnityEngine.TestTools.Graphics
 #else
                 PlayerConnection.instance.Send(FailedImageMessage.MessageId, failedImageMessage.Serialize());
 #endif
-                TestContext.CurrentContext.Test.Properties.Set("Image", Convert.ToBase64String(actual.EncodeToPNG()));
                 throw;
             }
         }
@@ -213,26 +193,7 @@ namespace UnityEngine.TestTools.Graphics
             try
             {
                 camera.targetTexture = rt;
-                var gcAllocRecorder = Recorder.Get("GC.Alloc");
-
-                // Render the first frame at this resolution (Alloc are allowed here)
-                camera.Render();
-
-                Profiler.BeginSample("GraphicTests_GC_Alloc_Check");
-                {
-                    gcAllocRecorder.enabled = true;
-                    camera.Render();
-                    gcAllocRecorder.enabled = false;
-                }
-                Profiler.EndSample();
-
-                // Note: Currently there are some allocs between the Camera.Render and the begining of the render pipeline rendering.
-                // Because of that, we can't enable this test.
-                int allocationCountOfRenderPipeline = gcAllocRecorder.sampleBlockCount;
-                
-                if (allocationCountOfRenderPipeline > 0)
-                    throw new Exception($"Memory allocation test failed, {allocationCountOfRenderPipeline} allocations detected. Look for GraphicTests_GC_Alloc_Check in the profiler for more details");
-
+                Assert.That(() => { camera.Render(); }, Is.Not.AllocatingGCMemory());
                 camera.targetTexture = null;
             }
             finally
