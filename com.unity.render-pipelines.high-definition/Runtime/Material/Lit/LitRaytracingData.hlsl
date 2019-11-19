@@ -71,12 +71,7 @@ bool GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
     surfaceData.specularOcclusion = 1.0;
 
     #ifdef _NORMALMAP
-    #ifdef USE_RAY_CONE_LOD
-    float normalLOD = computeTextureLOD(_NormalMap, _UVMappingMask, V, input.worldToTangent[2], rayCone, intersectionVertice);
-    #else
-    float normalLOD = 0.0f;
-    #endif
-    float3 normalTS = UnpackNormalmapRGorAG(SAMPLE_TEXTURE2D_LOD(_NormalMap, sampler_NormalMap, uvBase, normalLOD), _NormalScale);
+    float3 normalTS = SAMPLE_TEXTURE2D_LOD(_NormalMap, sampler_NormalMap, uvBase, _NormalScale);
     GetNormalWS(input, normalTS, surfaceData.normalWS, doubleSidedConstants);
     #else
     surfaceData.normalWS = input.worldToTangent[2];
@@ -84,12 +79,7 @@ bool GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
 
     // Default smoothness
     #ifdef _MASKMAP
-    #ifdef USE_RAY_CONE_LOD
-    float maskLOD = computeTextureLOD(_MaskMap, _UVMappingMask, V, input.worldToTangent[2], rayCone, intersectionVertice);
-    #else
-    float maskLOD = 0.0f;
-    #endif
-    surfaceData.perceptualSmoothness = SAMPLE_TEXTURE2D_LOD(_MaskMap, sampler_MaskMap, uvBase, maskLOD).a;
+    surfaceData.perceptualSmoothness = SAMPLE_TEXTURE2D_LOD(_MaskMap, sampler_MaskMap, uvBase, 0).a;
     surfaceData.perceptualSmoothness = lerp(_SmoothnessRemapMin, _SmoothnessRemapMax, surfaceData.perceptualSmoothness);
     #else
     surfaceData.perceptualSmoothness = _Smoothness;
@@ -97,7 +87,7 @@ bool GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
 
     // Default Ambient occlusion
     #ifdef _MASKMAP
-    surfaceData.ambientOcclusion = SAMPLE_TEXTURE2D_LOD(_MaskMap, sampler_MaskMap, uvBase, maskLOD).g;
+    surfaceData.ambientOcclusion = SAMPLE_TEXTURE2D_LOD(_MaskMap, sampler_MaskMap, uvBase, 0).g;
     surfaceData.ambientOcclusion = lerp(_AORemapMin, _AORemapMax, surfaceData.ambientOcclusion);
     #else
     surfaceData.ambientOcclusion = 1.0f;
@@ -105,7 +95,7 @@ bool GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
 
     // Default Metallic
     #ifdef _MASKMAP
-    surfaceData.metallic = SAMPLE_TEXTURE2D_LOD(_MaskMap, sampler_MaskMap, uvBase, maskLOD).r * _Metallic;
+    surfaceData.metallic = SAMPLE_TEXTURE2D_LOD(_MaskMap, sampler_MaskMap, uvBase, 0).r * _Metallic;
     #else
     surfaceData.metallic = _Metallic;
     #endif
@@ -178,8 +168,6 @@ bool GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
 
     InitBuiltinData(posInput, alpha, surfaceData.normalWS, -input.worldToTangent[2], input.texCoord1, input.texCoord2, builtinData);
     builtinData.emissiveColor = _EmissiveColor * lerp(float3(1.0, 1.0, 1.0), surfaceData.baseColor.rgb, _AlbedoAffectEmissive);
-    builtinData.emissiveColor *= SAMPLE_TEXTURE2D_LOD(_EmissiveColorMap, sampler_EmissiveColorMap, uvBase , 0.0).rgb;
-
     PostInitBuiltinData(V, posInput, surfaceData, builtinData);
 
     return true;

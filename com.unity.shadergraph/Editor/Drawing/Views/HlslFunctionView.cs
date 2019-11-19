@@ -14,7 +14,7 @@ namespace UnityEditor.ShaderGraph.Drawing
     {
         private EnumField m_Type;
         private TextField m_FunctionName;
-        private ObjectField m_FunctionSource;
+        private TextField m_FunctionSource;
         private TextField m_FunctionBody;
 
         internal HlslFunctionView(CustomFunctionNode node)
@@ -37,7 +37,6 @@ namespace UnityEditor.ShaderGraph.Drawing
                     node.owner.owner.RegisterCompleteObjectUndo("Change Function Type");
                     node.sourceType = (HlslSourceType)s.newValue;
                     Draw(node);
-                    node.ValidateNode();
                     node.Dirty(ModificationScope.Graph);
                 }
             });
@@ -57,28 +56,25 @@ namespace UnityEditor.ShaderGraph.Drawing
                 {
                     node.owner.owner.RegisterCompleteObjectUndo("Change Function Name");
                     node.functionName = m_FunctionName.value;
-                    node.ValidateNode();
                     node.Dirty(ModificationScope.Graph);
                 }
             });
-            
-            string path = AssetDatabase.GUIDToAssetPath(node.functionSource);
-            m_FunctionSource = new ObjectField() { value = AssetDatabase.LoadAssetAtPath<TextAsset>(path), objectType = typeof(TextAsset)};
-            m_FunctionSource.RegisterValueChangedCallback(s =>
-            {
-                long localId;
-                string guidString = string.Empty;
-                if(s.newValue != null)
-                {
-                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier((TextAsset)s.newValue, out guidString, out localId);
-                }
 
-                if(guidString != node.functionSource)
+            m_FunctionSource = new TextField { value = node.functionSource, multiline = false };
+            m_FunctionSource.RegisterCallback<FocusInEvent>(s =>
+            {
+                if(m_FunctionSource.value == CustomFunctionNode.defaultFunctionSource)
+                    m_FunctionSource.value = "";
+            });
+            m_FunctionSource.RegisterCallback<FocusOutEvent>(s =>
+            {
+                if(m_FunctionSource.value == "")
+                    m_FunctionSource.value = CustomFunctionNode.defaultFunctionSource;
+
+                if(m_FunctionSource.value != node.functionSource)
                 {
                     node.owner.owner.RegisterCompleteObjectUndo("Change Function Source");
-                    node.functionSource = guidString;
-                    Draw(node);
-                    node.ValidateNode();
+                    node.functionSource = m_FunctionSource.value;
                     node.Dirty(ModificationScope.Graph);
                 }
             });
@@ -98,7 +94,6 @@ namespace UnityEditor.ShaderGraph.Drawing
                 {
                     node.owner.owner.RegisterCompleteObjectUndo("Change Function Body");
                     node.functionBody = m_FunctionBody.value;
-                    node.ValidateNode();
                     node.Dirty(ModificationScope.Graph);
                 }
             });

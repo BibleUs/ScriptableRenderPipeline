@@ -185,11 +185,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
 #if ENABLE_RAYTRACING
         public bool useRayTracedShadows = false;
-        [Range(1, 32)]
-        public int numRayTracingSamples = 4;
-        public bool filterTracedShadow = true;
-        [Range(1, 32)]
-        public int filterSizeTraced = 16;
 #endif
 
         [Range(0.0f, 42.0f)]
@@ -239,8 +234,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         bool                m_WillRenderShadows;
         int[]               m_ShadowRequestIndices;
 
-        [System.NonSerialized]
-        Plane[]             m_ShadowFrustumPlanes = new Plane[6];
 
         #if ENABLE_RAYTRACING
         // Temporary index that stores the current shadow index for the light
@@ -271,7 +264,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         int GetShadowRequestCount()
         {
-            return (legacyLight.type == LightType.Point && lightTypeExtent == LightTypeExtent.Punctual) ? 6 : (legacyLight.type == LightType.Directional) ? m_ShadowSettings.cascadeShadowSplitCount.value : 1;
+            return (legacyLight.type == LightType.Point && lightTypeExtent == LightTypeExtent.Punctual) ? 6 : (legacyLight.type == LightType.Directional) ? m_ShadowSettings.cascadeShadowSplitCount : 1;
         }
 
         public void ReserveShadows(Camera camera, HDShadowManager shadowManager, HDShadowInitParameters initParameters, CullingResults cullResults, FrameSettings frameSettings, int lightIndex)
@@ -314,9 +307,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             bool viewPortRescaling = false;
             // Compute dynamic shadow resolution
-
-            viewPortRescaling |= (shadowMapType == ShadowMapType.PunctualAtlas && initParameters.punctualLightShadowAtlas.useDynamicViewportRescale);
-            viewPortRescaling |= (shadowMapType == ShadowMapType.AreaLightAtlas && initParameters.areaLightShadowAtlas.useDynamicViewportRescale);
+            viewPortRescaling = viewPortRescaling || (shadowMapType == ShadowMapType.PunctualAtlas && initParameters.punctualLightShadowAtlas.useDynamicViewportRescale);
+            viewPortRescaling = viewPortRescaling || (shadowMapType == ShadowMapType.AreaLightAtlas && initParameters.areaLightShadowAtlas.useDynamicViewportRescale);
 
             if (viewPortRescaling)
             {
@@ -335,7 +327,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // Update the directional shadow atlas size
             if (legacyLight.type == LightType.Directional)
-                shadowManager.UpdateDirectionalShadowResolution((int)viewportSize.x, m_ShadowSettings.cascadeShadowSplitCount.value);
+                shadowManager.UpdateDirectionalShadowResolution((int)viewportSize.x, m_ShadowSettings.cascadeShadowSplitCount);
 
             int count = GetShadowRequestCount();
             for (int index = 0; index < count; index++)
@@ -363,7 +355,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public int UpdateShadowRequest(HDCamera hdCamera, HDShadowManager manager, VisibleLight visibleLight, CullingResults cullResults, int lightIndex, out int shadowRequestCount)
         {
             int                 firstShadowRequestIndex = -1;
-            Vector3             cameraPos = hdCamera.mainViewConstants.worldSpaceCameraPos;
+            Vector3             cameraPos = hdCamera.camera.transform.position;
             shadowRequestCount = 0;
 
             int count = GetShadowRequestCount();
@@ -382,7 +374,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     Vector2 shapeSize = new Vector2(shapeWidth, shapeHeight);
                     float offset = GetAreaLightOffsetForShadows(shapeSize, areaLightShadowCone);
                     Vector3 shadowOffset = offset * visibleLight.GetForward();
-                    HDShadowUtils.ExtractAreaLightData(hdCamera, visibleLight, lightTypeExtent, visibleLight.GetPosition() + shadowOffset, areaLightShadowCone, shadowNearPlane, shapeSize, viewportSize, m_ShadowData.normalBiasMax, out shadowRequest.view, out invViewProjection, out shadowRequest.deviceProjectionYFlip, out shadowRequest.deviceProjection, out shadowRequest.splitData);
+                    HDShadowUtils.ExtractAreaLightData(hdCamera, visibleLight, lightTypeExtent, visibleLight.GetPosition() + shadowOffset, areaLightShadowCone, shadowNearPlane - offset, shapeSize, viewportSize, m_ShadowData.normalBiasMax, out shadowRequest.view, out invViewProjection, out shadowRequest.projection, out shadowRequest.deviceProjection, out shadowRequest.splitData);
                 }
                 else
                 {
@@ -393,7 +385,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             HDShadowUtils.ExtractPointLightData(
                                 hdCamera, legacyLight.type, visibleLight, viewportSize, shadowNearPlane,
                                 m_ShadowData.normalBiasMax, (uint)index, out shadowRequest.view,
-                                out invViewProjection, out shadowRequest.deviceProjectionYFlip,
+                                out invViewProjection, out shadowRequest.projection,
                                 out shadowRequest.deviceProjection, out shadowRequest.splitData
                             );
                             break;
@@ -401,7 +393,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             HDShadowUtils.ExtractSpotLightData(
                                 hdCamera, legacyLight.type, spotLightShape, shadowNearPlane, aspectRatio, shapeWidth,
                                 shapeHeight, visibleLight, viewportSize, m_ShadowData.normalBiasMax,
-                                out shadowRequest.view, out invViewProjection, out shadowRequest.deviceProjectionYFlip,
+                                out shadowRequest.view, out invViewProjection, out shadowRequest.projection,
                                 out shadowRequest.deviceProjection, out shadowRequest.splitData
                             );
                             break;
@@ -410,9 +402,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             float nearPlaneOffset = QualitySettings.shadowNearPlaneOffset;
 
                             HDShadowUtils.ExtractDirectionalLightData(
-                                visibleLight, viewportSize, (uint)index, m_ShadowSettings.cascadeShadowSplitCount.value,
+                                visibleLight, viewportSize, (uint)index, m_ShadowSettings.cascadeShadowSplitCount,
                                 m_ShadowSettings.cascadeShadowSplits, nearPlaneOffset, cullResults, lightIndex,
-                                out shadowRequest.view, out invViewProjection, out shadowRequest.deviceProjectionYFlip,
+                                out shadowRequest.view, out invViewProjection, out shadowRequest.projection,
                                 out shadowRequest.deviceProjection, out shadowRequest.splitData
                             );
 
@@ -431,7 +423,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
 
                 // Assign all setting common to every lights
-                SetCommonShadowRequestSettings(shadowRequest, cameraPos, invViewProjection, shadowRequest.deviceProjectionYFlip * shadowRequest.view, viewportSize, lightIndex);
+                SetCommonShadowRequestSettings(shadowRequest, cameraPos, invViewProjection, viewportSize, lightIndex);
 
                 manager.UpdateShadowRequest(shadowRequestIndex, shadowRequest);
 
@@ -445,13 +437,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             return firstShadowRequestIndex;
         }
 
-        void SetCommonShadowRequestSettings(HDShadowRequest shadowRequest, Vector3 cameraPos, Matrix4x4 invViewProjection, Matrix4x4 viewProjection, Vector2 viewportSize, int lightIndex)
+        void SetCommonShadowRequestSettings(HDShadowRequest shadowRequest, Vector3 cameraPos, Matrix4x4 invViewProjection, Vector2 viewportSize, int lightIndex)
         {
             // zBuffer param to reconstruct depth position (for transmission)
             float f = legacyLight.range;
             float n = shadowNearPlane;
             shadowRequest.zBufferParam = new Vector4((f-n)/n, 1.0f, (f-n)/n*f, 1.0f/f);
-            shadowRequest.viewBias = new Vector4(m_ShadowData.viewBiasMin, m_ShadowData.viewBiasMax, m_ShadowData.viewBiasScale, 2.0f / shadowRequest.deviceProjectionYFlip.m00 / viewportSize.x * 1.4142135623730950488016887242097f);
+            shadowRequest.viewBias = new Vector4(m_ShadowData.viewBiasMin, m_ShadowData.viewBiasMax, m_ShadowData.viewBiasScale, 2.0f / shadowRequest.projection.m00 / viewportSize.x * 1.4142135623730950488016887242097f);
             shadowRequest.normalBias = new Vector3(m_ShadowData.normalBiasMin, m_ShadowData.normalBiasMax, m_ShadowData.normalBiasScale);
             shadowRequest.flags = 0;
             shadowRequest.flags |= m_ShadowData.sampleBiasScale     ? (int)HDShadowFlag.SampleBiasScale : 0;
@@ -494,21 +486,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             shadowRequest.lightType = (int) legacyLight.type;
 
-            // shadow clip planes (used for tessellation clipping)
-            GeometryUtility.CalculateFrustumPlanes(viewProjection, m_ShadowFrustumPlanes);
-            if (shadowRequest.frustumPlanes?.Length != 6)
-                shadowRequest.frustumPlanes = new Vector4[6];
-            // Left, right, top, bottom, near, far.
-            for (int i = 0; i < 6; i++)
-            {
-                shadowRequest.frustumPlanes[i] = new Vector4(
-                    m_ShadowFrustumPlanes[i].normal.x,
-                    m_ShadowFrustumPlanes[i].normal.y,
-                    m_ShadowFrustumPlanes[i].normal.z,
-                    m_ShadowFrustumPlanes[i].distance
-                );
-            }
-
             // Shadow algorithm parameters
             shadowRequest.shadowSoftness = shadowSoftness / 100f;
             shadowRequest.blockerSampleCount = blockerSampleCount;
@@ -527,9 +504,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             shadowRequest.evsmParams.w = evsmBlurPasses;
         }
 
-        // We need these old states to make timeline and the animator record the intensity value and the emissive mesh changes
+#if UNITY_EDITOR
+        // We need these old states to make timeline and the animator record the intensity value and the emissive mesh changes (editor-only)
         [System.NonSerialized]
         TimelineWorkaround timelineWorkaround = new TimelineWorkaround();
+#endif
 
         // For light that used the old intensity system we update them
         [System.NonSerialized]
@@ -656,34 +635,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 return useColorTemperatureProperty.boolValue;
             }
         }
-        
-        public static bool IsAreaLight(SerializedProperty lightType)
-        {
-            return IsAreaLight((LightTypeExtent)lightType.enumValueIndex);
-        }
-
-#endif
-
-        [System.NonSerialized]
-        bool m_Animated;
-
-        private void Start()
-        {
-            // If there is an animator attached ot the light, we assume that some of the light properties
-            // might be driven by this animator (using timeline or animations) so we force the LateUpdate
-            // to sync the animated HDAdditionalLightData properties with the light component.
-            m_Animated = GetComponent<Animator>() != null;
-        }
 
         // TODO: There are a lot of old != current checks and assignation in this function, maybe think about using another system ?
         void LateUpdate()
         {
-// We force the animation in the editor and in play mode when there is an animator component attached to the light
-#if !UNITY_EDITOR
-            if (!m_Animated)
-                return;
-#endif
-
             Vector3 shape = new Vector3(shapeWidth, shapeHeight, shapeRadius);
 
             // Check if the intensity have been changed by the inspector or an animator
@@ -735,6 +690,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             intensity = displayLightIntensity;
         }
 
+        public static bool IsAreaLight(SerializedProperty lightType)
+        {
+            return IsAreaLight((LightTypeExtent)lightType.enumValueIndex);
+        }
+
         public void UpdateAreaLightEmissiveMesh()
         {
             MeshRenderer emissiveMeshRenderer = GetComponent<MeshRenderer>();
@@ -776,9 +736,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             lightSize = Vector3.Max(Vector3.one * k_MinAreaWidth, lightSize);
             legacyLight.transform.localScale = lightSize;
-#if UNITY_EDITOR
             legacyLight.areaSize = lightSize;
-#endif
 
             switch (lightTypeExtent)
             {
@@ -808,12 +766,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // m_Light.intensity is in luminance which is the value we need for emissive color
             Color value = legacyLight.color.linear * legacyLight.intensity;
-
-// We don't have access to the color temperature in the player because it's a private member of the Light component
-#if UNITY_EDITOR
             if (useColorTemperature)
                 value *= Mathf.CorrelatedColorTemperatureToRGB(legacyLight.colorTemperature);
-#endif
 
             value *= lightDimmer;
 
@@ -823,6 +777,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             emissiveMeshRenderer.sharedMaterial.SetTexture("_EmissiveColorMap", areaLightCookie);
             CoreUtils.SetKeyword(emissiveMeshRenderer.sharedMaterial, "_EMISSIVE_COLOR_MAP", areaLightCookie != null);
         }
+
+#endif
 
         public void CopyTo(HDAdditionalLightData data)
         {

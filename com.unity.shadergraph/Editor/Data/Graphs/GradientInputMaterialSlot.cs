@@ -52,12 +52,12 @@ namespace UnityEditor.ShaderGraph
             if (generationMode.IsPreview())
                 return GradientUtils.GetGradientForPreview(matOwner.GetVariableNameForSlot(id));
 
-            return ConcreteSlotValueAsVariable();
+            return ConcreteSlotValueAsVariable(matOwner.precision);
         }
 
-        protected override string ConcreteSlotValueAsVariable()
+        protected override string ConcreteSlotValueAsVariable(AbstractMaterialNode.OutputPrecision precision)
         {
-            return GradientUtils.GetGradientValue(value, true, "");
+            return GradientUtils.GetGradientValue(value, precision, true, "");
         }
 
         public override void AddDefaultProperty(PropertyCollector properties, GenerationMode generationMode)

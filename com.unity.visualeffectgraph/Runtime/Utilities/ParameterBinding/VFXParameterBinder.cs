@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.VFX;
 
-namespace UnityEngine.Experimental.VFX.Utility
+namespace UnityEngine.VFX.Utils
 {
     [RequireComponent(typeof(VisualEffect))]
     [DefaultExecutionOrder(1)]
@@ -19,6 +19,14 @@ namespace UnityEngine.Experimental.VFX.Utility
         private void OnEnable()
         {
             m_VisualEffect = GetComponent<VisualEffect>();
+        }
+
+        private void OnDestroy()
+        {
+#if UNITY_EDITOR
+            foreach (var binding in m_Bindings)
+                UnityEditor.Undo.DestroyObjectImmediate(binding);
+#endif
         }
 
         void Update()

@@ -9,7 +9,7 @@ Shader "HDRP/Nature/SpeedTree7"
         _DetailTex("Detail", 2D) = "black" {}
         _BumpMap("Normal Map", 2D) = "bump" {}
         _Cutoff("Alpha Cutoff", Range(0,1)) = 0.333
-        _ZBias("Depth Bias", Range(0.0, 0.1)) = 0.0
+        _ZBias("Depth Bias", Range(0, 0.1)) = 0.0
 
         [HideInInspector] _EmissionColor("Color", Color) = (0, 0, 0)    // Base Lit material UI assumes there is an _EmissionColor, so we have it here as a placeholder.
         [MaterialEnum(Off,0,Front,1,Back,2)] _Cull("Cull", Int) = 2
@@ -77,6 +77,8 @@ Shader "HDRP/Nature/SpeedTree7"
 
             HLSLPROGRAM
 
+            #pragma vertex SpeedTree7VertDepth
+
             // We reuse depth prepass for the scene selection, allow to handle alpha correctly as well as tessellation and vertex animation
             #define SHADERPASS SHADERPASS_DEPTH_ONLY
             #define SCENESELECTIONPASS // This will drive the output of the scene selection shader
@@ -102,6 +104,8 @@ Shader "HDRP/Nature/SpeedTree7"
             HLSLPROGRAM
 
             #pragma multi_compile_vertex LOD_FADE_PERCENTAGE
+
+            #pragma vertex SpeedTree7VertDepth
 
             #define SHADERPASS SHADERPASS_SHADOWS
             #define USE_LEGACY_UNITY_MATRIX_VARIABLES
@@ -131,6 +135,8 @@ Shader "HDRP/Nature/SpeedTree7"
             // Setup DECALS_OFF so the shader stripper can remove variants
             #pragma multi_compile DECALS_OFF DECALS_3RT DECALS_4RT
             #pragma multi_compile _ LIGHT_LAYERS
+
+            #pragma vertex SpeedTree7Vert
 
             #ifdef _ALPHATEST_ON
             // When we have alpha test, we will force a depth prepass so we always bypass the clip instruction in the GBuffer
@@ -167,6 +173,7 @@ Shader "HDRP/Nature/SpeedTree7"
             // Lightmap memo
             // DYNAMICLIGHTMAP_ON is used when we have an "enlighten lightmap" ie a lightmap updated at runtime by enlighten.This lightmap contain indirect lighting from realtime lights and realtime emissive material.Offline baked lighting(from baked material / light,
             // both direct and indirect lighting) will hand up in the "regular" lightmap->LIGHTMAP_ON.
+            #pragma vertex SpeedTree7Vert
             
             #define SHADERPASS SHADERPASS_LIGHT_TRANSPORT
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
@@ -193,6 +200,9 @@ Shader "HDRP/Nature/SpeedTree7"
 
             HLSLPROGRAM
             #pragma multi_compile_vertex LOD_FADE_PERCENTAGE
+
+            //#pragma vertex SpeedTree7VertDepth
+            //#pragma vertex SpeedTree7Vert
 
             #define WRITE_NORMAL_BUFFER
             #pragma multi_compile _ WRITE_MSAA_DEPTH
@@ -239,6 +249,8 @@ Shader "HDRP/Nature/SpeedTree7"
             #define _SURFACE_TYPE_TRANSPARENT
             #endif
 
+            #pragma vertex SpeedTree7Vert
+
             #define SHADERPASS SHADERPASS_FORWARD
             // In case of opaque we don't want to perform the alpha test, it is done in depth prepass and we use depth equal for ztest (setup from UI)
             #ifndef _SURFACE_TYPE_TRANSPARENT
@@ -275,7 +287,7 @@ Shader "HDRP/Nature/SpeedTree7"
         }
     }
 
-    Dependency "BillboardShader" = "HDRP/Nature/SpeedTree7 Billboard"
+    //Dependency "BillboardShader" = "HDRP/Nature/SpeedTree7 Billboard"
     FallBack "HDRP/Lit"
     CustomEditor "SpeedTreeMaterialInspector"
 }

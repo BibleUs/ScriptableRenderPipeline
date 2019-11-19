@@ -439,7 +439,7 @@ namespace UnityEditor.VFX.UI
             {
                 parametersToRemove = parametersToRemove.Concat(controller.RemoveCategory(m_Blackboard.GetCategoryIndex(category)));
             }
-            controller.Remove(selection.OfType<IControlledElement>().Select(t => t.controller).Concat(parametersToRemove.Cast<Controller>()), true);
+            controller.Remove(selection.OfType<IControlledElement>().Select(t => t.controller).Concat(parametersToRemove.Cast<Controller>()));
         }
 
         void IControlledElement.OnControllerChanged(ref ControllerChangedEvent e)
@@ -945,8 +945,13 @@ namespace UnityEditor.VFX.UI
                 VFXViewController templateController = VFXViewController.GetController(resource, true);
                 templateController.useCount++;
 
+#if OLD_COPY_PASTE
+                var data = VFXCopyPaste.SerializeElements(templateController.allChildren, templateController.graph.UIInfos.uiBounds);
+                VFXCopyPaste.UnserializeAndPasteElements(controller, tPos, data, this, groupNode != null ? groupNode.controller : null);
+#else
                 var data = VFXCopy.SerializeElements(templateController.allChildren, templateController.graph.UIInfos.uiBounds);
                 VFXPaste.UnserializeAndPasteElements(controller, tPos, data, this, groupNode != null ? groupNode.controller : null);
+#endif
 
                 templateController.useCount--;
             }
@@ -1134,12 +1139,6 @@ namespace UnityEditor.VFX.UI
             else if (change.elementsToRemove != null)
             {
                 controller.Remove(change.elementsToRemove.OfType<IControlledElement>().Where(t => t.controller != null).Select(t => t.controller));
-                
-                foreach( var dataEdge in change.elementsToRemove.OfType<VFXDataEdge>())
-                {
-                    RemoveElement(dataEdge);
-                    dataEdges.Remove(dataEdge.controller);
-                }
             }
 
             return change;
@@ -1385,11 +1384,14 @@ namespace UnityEditor.VFX.UI
         string SerializeElements(IEnumerable<GraphElement> elements)
         {
             pasteOffset = defaultPasteOffset;
-
+#if OLD_COPY_PASTE
+            return VFXCopyPaste.SerializeElements(ElementsToController(elements), GetElementsBounds(elements));
+#else
             Profiler.BeginSample("VFXCopy.SerializeElements");
             string result = VFXCopy.SerializeElements(ElementsToController(elements), GetElementsBounds(elements));
             Profiler.EndSample();
             return result;
+#endif
         }
 
         Vector2 pasteCenter
@@ -1406,9 +1408,13 @@ namespace UnityEditor.VFX.UI
 
         void UnserializeAndPasteElements(string operationName, string data)
         {
+#if OLD_COPY_PASTE
+            VFXCopyPaste.UnserializeAndPasteElements(controller, pasteCenter, data, this);
+#else
             Profiler.BeginSample("VFXPaste.VFXPaste.UnserializeAndPasteElements");
             VFXPaste.UnserializeAndPasteElements(controller, pasteCenter, data, this);
             Profiler.EndSample();
+#endif
 
             pasteOffset += defaultPasteOffset;
         }

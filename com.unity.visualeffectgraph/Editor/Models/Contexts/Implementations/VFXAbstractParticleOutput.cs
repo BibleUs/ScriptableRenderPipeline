@@ -11,12 +11,6 @@ namespace UnityEditor.VFX
 {
     abstract class VFXAbstractParticleOutput : VFXContext, IVFXSubRenderer
     {
-        public enum ColorMappingMode
-        {
-            Default,
-            GradientMapped
-        }
-
         public enum BlendMode
         {
             Additive,
@@ -31,8 +25,7 @@ namespace UnityEditor.VFX
             Simple,
             Flipbook,
             FlipbookBlend,
-            ScaleAndBias,
-            FlipbookMotionBlend,
+            ScaleAndBias
         }
 
         public enum ZWriteMode
@@ -80,10 +73,7 @@ namespace UnityEditor.VFX
         [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
         protected ZTestMode zTestMode = ZTestMode.Default;
 
-        [VFXSetting, SerializeField, Tooltip("Determines how the color is handled at pixel shader"), Header("Particle Options")]
-        protected ColorMappingMode colorMappingMode;
-
-        [VFXSetting, SerializeField, Tooltip("Determines how the particle UV are handled"), FormerlySerializedAs("flipbookMode")]
+        [VFXSetting, SerializeField, Header("Particle Options"), FormerlySerializedAs("flipbookMode")]
         protected UVMode uvMode;
 
         [VFXSetting, SerializeField]
@@ -137,17 +127,12 @@ namespace UnityEditor.VFX
 
         protected bool isBlendModeOpaque { get { return blendMode == BlendMode.Opaque || blendMode == BlendMode.Masked; } }
 
-        protected bool usesFlipbook { get { return supportsUV && (uvMode == UVMode.Flipbook || uvMode == UVMode.FlipbookBlend || uvMode == UVMode.FlipbookMotionBlend); } }
+        protected bool usesFlipbook { get { return supportsUV && (uvMode == UVMode.Flipbook || uvMode == UVMode.FlipbookBlend); } }
 
         protected virtual IEnumerable<VFXNamedExpression> CollectGPUExpressions(IEnumerable<VFXNamedExpression> slotExpressions)
         {
             if (blendMode == BlendMode.Masked)
                 yield return slotExpressions.First(o => o.name == "alphaThreshold");
-
-            if (colorMappingMode == ColorMappingMode.GradientMapped)
-            {
-                yield return slotExpressions.First(o => o.name == "gradient");
-            }
 
             if (supportSoftParticles)
             {
@@ -158,20 +143,13 @@ namespace UnityEditor.VFX
 
             if (supportsUV && uvMode != UVMode.Simple)
             {
-                VFXNamedExpression flipBookSizeExp;
                 switch (uvMode)
                 {
                     case UVMode.Flipbook:
                     case UVMode.FlipbookBlend:
-                    case UVMode.FlipbookMotionBlend:
-                        flipBookSizeExp = slotExpressions.First(o => o.name == "flipBookSize");
+                        var flipBookSizeExp = slotExpressions.First(o => o.name == "flipBookSize");
                         yield return flipBookSizeExp;
                         yield return new VFXNamedExpression(VFXValue.Constant(Vector2.one) / flipBookSizeExp.exp, "invFlipBookSize");
-                        if (uvMode == UVMode.FlipbookMotionBlend)
-                        {
-                            yield return slotExpressions.First(o => o.name == "motionVectorMap");
-                            yield return slotExpressions.First(o => o.name == "motionVectorScale");
-                        }
                         break;
                     case UVMode.ScaleAndBias:
                         yield return slotExpressions.First(o => o.name == "uvScale");
@@ -193,12 +171,6 @@ namespace UnityEditor.VFX
             return new VFXExpressionMapper();
         }
 
-        public class InputPropertiesGradientMapped
-        {
-            [Tooltip("The gradient used to sample color")]
-            public Gradient gradient = VFXResources.defaultResources.gradientMapRamp;
-        }
-
         protected override IEnumerable<VFXPropertyWithValue> inputProperties
         {
             get
@@ -206,25 +178,13 @@ namespace UnityEditor.VFX
                 foreach (var property in PropertiesFromType(GetInputPropertiesTypeName()))
                     yield return property;
 
-                if(colorMappingMode == ColorMappingMode.GradientMapped)
-                {
-                    foreach(var property in PropertiesFromType("InputPropertiesGradientMapped"))
-                        yield return property;
-                }
-
                 if (supportsUV && uvMode != UVMode.Simple)
                 {
                     switch (uvMode)
                     {
                         case UVMode.Flipbook:
                         case UVMode.FlipbookBlend:
-                        case UVMode.FlipbookMotionBlend:
                             yield return new VFXPropertyWithValue(new VFXProperty(typeof(Vector2), "flipBookSize"), new Vector2(4, 4));
-                            if(uvMode == UVMode.FlipbookMotionBlend)
-                            {
-                                yield return new VFXPropertyWithValue(new VFXProperty(typeof(Texture2D), "motionVectorMap"));
-                                yield return new VFXPropertyWithValue(new VFXProperty(typeof(float), "motionVectorScale"), 1.0f);
-                            }
                             break;
                         case UVMode.ScaleAndBias:
                             yield return new VFXPropertyWithValue(new VFXProperty(typeof(Vector2), "uvScale"), Vector2.one);
@@ -245,16 +205,6 @@ namespace UnityEditor.VFX
         {
             get
             {
-                switch(colorMappingMode)
-                {
-                    case ColorMappingMode.Default:
-                        yield return "VFX_COLORMAPPING_DEFAULT";
-                        break;
-                    case ColorMappingMode.GradientMapped:
-                        yield return "VFX_COLORMAPPING_GRADIENTMAPPED";
-                        break;
-                }
-
                 if (isBlendModeOpaque)
                     yield return "IS_OPAQUE_PARTICLE";
                 else
@@ -301,11 +251,6 @@ namespace UnityEditor.VFX
                         case UVMode.FlipbookBlend:
                             yield return "USE_FLIPBOOK";
                             yield return "USE_FLIPBOOK_INTERPOLATION";
-                            break;
-                        case UVMode.FlipbookMotionBlend:
-                            yield return "USE_FLIPBOOK";
-                            yield return "USE_FLIPBOOK_INTERPOLATION";
-                            yield return "USE_FLIPBOOK_MOTIONVECTORS";
                             break;
                         case UVMode.ScaleAndBias:
                             yield return "USE_UV_SCALE_BIAS";

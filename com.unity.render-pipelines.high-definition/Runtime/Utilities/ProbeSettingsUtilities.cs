@@ -24,8 +24,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             ref ProbeSettings settings,                             // In Parameter
             ref ProbeCapturePositionSettings probePosition,         // In parameter
             ref CameraSettings cameraSettings,                      // InOut parameter
-            ref CameraPositionSettings cameraPosition,              // InOut parameter
-            float referenceFieldOfView = 90
+            ref CameraPositionSettings cameraPosition               // InOut parameter
         )
         {
             cameraSettings = settings.camera;
@@ -37,11 +36,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 case ProbeSettings.ProbeType.PlanarProbe:
                     positionMode = PositionMode.MirrorReferenceTransformWithProbePlane;
                     useReferenceTransformAsNearClipPlane = true;
-                    ApplyPlanarFrustumHandling(
-                        ref settings, ref probePosition,
-                        ref cameraSettings, ref cameraPosition,
-                        referenceFieldOfView
-                    );
                     break;
                 case ProbeSettings.ProbeType.ReflectionProbe:
                     positionMode = PositionMode.UseProbeTransform;
@@ -64,11 +58,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         cameraPosition.position = proxyMatrix.MultiplyPoint(settings.proxySettings.capturePositionProxySpace);
                         cameraPosition.rotation = proxyMatrix.rotation * settings.proxySettings.captureRotationProxySpace;
 
-                        // In case of probe baking, 99% of the time, orientation of the cubemap doesn't matters
-                        //   so, we build one without any rotation, thus we don't have to change the basis
-                        //   during sampling the cubemap.
-                        if (settings.type == ProbeSettings.ProbeType.ReflectionProbe)
-                            cameraPosition.rotation = Quaternion.identity;
+                        
                         break;
                     }
                 case PositionMode.MirrorReferenceTransformWithProbePlane:
@@ -129,9 +119,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             var worldToCameraRHS = GeometryUtils.CalculateWorldToCameraMatrixRHS(
                 probePosition.referencePosition,
-                //probePosition.referenceRotation
-                // The capture always look at the center of the probe influence
-                Quaternion.LookRotation(mirrorPosition - probePosition.referencePosition, Vector3.up)
+                probePosition.referenceRotation
             );
             var reflectionMatrix = GeometryUtils.CalculateReflectionMatrix(mirrorPosition, mirrorForward);
             cameraPosition.worldToCameraMatrix = worldToCameraRHS * reflectionMatrix;
@@ -143,44 +131,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var forward = reflectionMatrix.MultiplyVector(probePosition.referenceRotation * Vector3.forward);
             var up = reflectionMatrix.MultiplyVector(probePosition.referenceRotation * Vector3.up);
             cameraPosition.rotation = Quaternion.LookRotation(forward, up);
-        }
-
-        internal static void ApplyPlanarFrustumHandling(
-            ref ProbeSettings settings,                             // In Parameter
-            ref ProbeCapturePositionSettings probePosition,         // In parameter
-            ref CameraSettings cameraSettings,                      // InOut parameter
-            ref CameraPositionSettings cameraPosition,              // InOut parameter
-            float referenceFieldOfView
-        )
-        {
-            const float k_MaxFieldOfView = 170;
-
-            var proxyMatrix = Matrix4x4.TRS(probePosition.proxyPosition, probePosition.proxyRotation, Vector3.one);
-            var mirrorPosition = proxyMatrix.MultiplyPoint(settings.proxySettings.mirrorPositionProxySpace);
-
-            switch (settings.frustum.fieldOfViewMode)
-            {
-                case ProbeSettings.Frustum.FOVMode.Fixed:
-                    cameraSettings.frustum.fieldOfView = settings.frustum.fixedValue;
-                    break;
-                case ProbeSettings.Frustum.FOVMode.Viewer:
-                    cameraSettings.frustum.fieldOfView = Mathf.Min(
-                        referenceFieldOfView * settings.frustum.viewerScale,
-                        k_MaxFieldOfView
-                    );
-                    break;
-                case ProbeSettings.Frustum.FOVMode.Automatic:
-                    // Dynamic FOV tries to adapt the FOV to have maximum usage of the target render texture
-                    //     (A lot of pixel can be discarded in the render texture). This way we can have a greater
-                    //     resolution for the planar with the same cost.
-                    cameraSettings.frustum.fieldOfView = Mathf.Min(
-                            settings.influence.ComputeFOVAt(
-                            probePosition.referencePosition, mirrorPosition, probePosition.influenceToWorld
-                        ) * settings.frustum.automaticScale,
-                            k_MaxFieldOfView
-                    );
-                    break;
-            }
         }
 
         internal static void ApplyObliqueNearClipPlane(
@@ -199,7 +149,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 mirrorPosition,
                 mirrorForward
             );
-
             var sourceProjection = Matrix4x4.Perspective(
                 cameraSettings.frustum.fieldOfView,
                 cameraSettings.frustum.aspect,

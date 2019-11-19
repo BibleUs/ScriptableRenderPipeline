@@ -1,4 +1,4 @@
-namespace UnityEditor.Experimental.VFX.Utility
+namespace UnityEditor.VFX.Utils
 {
     public class VFXBinderEditor : Editor { }
 }

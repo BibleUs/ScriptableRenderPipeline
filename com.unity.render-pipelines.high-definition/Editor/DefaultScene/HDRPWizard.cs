@@ -27,8 +27,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             public static readonly GUIContent haveStartPopup = EditorGUIUtility.TrTextContent("Show on start");
 
             //configuration debugger
-            public static readonly GUIContent ok = EditorGUIUtility.TrIconContent(EditorGUIUtility.Load(@"Packages/com.unity.render-pipelines.high-definition/Editor/DefaultScene/WizardResources/OK.png") as Texture2D);
-            public static readonly GUIContent fail = EditorGUIUtility.TrIconContent(EditorGUIUtility.Load(@"Packages/com.unity.render-pipelines.high-definition/Editor/DefaultScene/WizardResources/Error.png") as Texture2D);
+            public static readonly GUIContent ok = EditorGUIUtility.TrIconContent("Collab");
+            public static readonly GUIContent fail = EditorGUIUtility.TrIconContent("CollabError");
             public static readonly GUIContent resolve = EditorGUIUtility.TrTextContent("Fix");
             public static readonly GUIContent resolveAll = EditorGUIUtility.TrTextContent("Fix All");
             public static readonly GUIContent resolveAllQuality = EditorGUIUtility.TrTextContent("Fix All Qualities");
@@ -294,7 +294,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             var hdrpAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
 
-            string defaultScenePath = "Assets/" + HDProjectSettings.projectSettingsFolderPath + "/" + hdrpAsset.renderPipelineEditorResources.defaultScene.name + ".prefab";
+            string defaultScenePath = "Assets/" + HDProjectSettings.projectSettingsFolderPath + "/" + hdrpAsset.renderPipelineEditorResources.defaultScene.name + ".asset";
             AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(hdrpAsset.renderPipelineEditorResources.defaultScene), defaultScenePath);
             string defaultRenderSettingsProfilePath = "Assets/" + HDProjectSettings.projectSettingsFolderPath + "/" + hdrpAsset.renderPipelineEditorResources.defaultRenderSettingsProfile.name + ".asset";
             AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(hdrpAsset.renderPipelineEditorResources.defaultRenderSettingsProfile), defaultRenderSettingsProfilePath);
@@ -328,8 +328,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUILayout.EndHorizontal();
 
             ++EditorGUI.indentLevel;
+#if UNITY_2019_2
+            DrawConfigInfoLine(Style.scriptingRuntimeVersionLabel, Style.scriptingRuntimeVersionError, Style.ok, Style.resolve, IsScriptRuntimeVersionCorrect, FixScriptRuntimeVersion);
+#endif
             DrawConfigInfoLine(Style.colorSpaceLabel, Style.colorSpaceError, Style.ok, Style.resolve, IsColorSpaceCorrect, FixColorSpace);
             DrawConfigInfoLine(Style.lightmapLabel, Style.lightmapError, Style.ok, Style.resolveAllBuildTarget, IsLightmapCorrect, FixLightmap);
+            DrawConfigInfoLine(Style.shadowLabel, Style.shadowError, Style.ok, Style.resolveAllQuality, IsShadowCorrect, FixShadow);
             DrawConfigInfoLine(Style.shadowMaskLabel, Style.shadowMaskError, Style.ok, Style.resolveAllQuality, IsShadowmaskCorrect, FixShadowmask);
             DrawConfigInfoLine(Style.hdrpAssetLabel, Style.hdrpAssetError, Style.ok, Style.resolveAll, IsHdrpAssetCorrect, FixHdrpAsset);
             ++EditorGUI.indentLevel;
@@ -416,7 +420,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         }
 
         bool IsAllCorrect() =>
+#if UNITY_2019_2
+            IsScriptRuntimeVersionCorrect()
+            &&
+#endif
             IsLightmapCorrect()
+            && IsShadowCorrect()
             && IsShadowmaskCorrect()
             && IsColorSpaceCorrect()
             && IsHdrpAssetCorrect()
@@ -427,6 +436,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             //Async will allow to make things green when fixed before asking
             //new confirmation to fix elements. It help the user to know which
             //one is currently being adressed
+#if UNITY_2019_2
+            if (!IsScriptRuntimeVersionCorrect())
+            {
+                FixScriptRuntimeVersion();
+                return;
+            }
+#endif
             if (!IsColorSpaceCorrect())
             {
                 FixColorSpace();
@@ -435,6 +451,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (!IsLightmapCorrect())
             {
                 FixLightmap();
+                return;
+            }
+            if (!IsShadowCorrect())
+            {
+                FixShadow();
                 return;
             }
             if (!IsShadowmaskCorrect())
@@ -508,6 +529,22 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             SetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup.WSA, LightmapEncodingQualityCopy.High);
         }
 
+        bool IsShadowCorrect()
+        {
+            //QualitySettings.SetQualityLevel.set quality is too costy to be use at frame
+            return QualitySettings.shadows == ShadowQuality.All;
+        }
+        void FixShadow()
+        {
+            int currentQuality = QualitySettings.GetQualityLevel();
+            for (int i = 0; i < QualitySettings.names.Length; ++i)
+            {
+                QualitySettings.SetQualityLevel(i, applyExpensiveChanges: false);
+                QualitySettings.shadows = ShadowQuality.All;
+            }
+            QualitySettings.SetQualityLevel(currentQuality, applyExpensiveChanges: false);
+        }
+
         bool IsShadowmaskCorrect()
         {
             //QualitySettings.SetQualityLevel.set quality is too costy to be use at frame
@@ -523,6 +560,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             }
             QualitySettings.SetQualityLevel(currentQuality, applyExpensiveChanges: false);
         }
+#if UNITY_2019_2
+        bool IsScriptRuntimeVersionCorrect() => PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest;
+        void FixScriptRuntimeVersion() => PlayerSettings.scriptingRuntimeVersion = ScriptingRuntimeVersion.Latest;
+#endif
 
         bool IsHdrpAssetUsedCorrect() => GraphicsSettings.renderPipelineAsset != null && GraphicsSettings.renderPipelineAsset is HDRenderPipelineAsset;
         void FixHdrpAssetUsed() => CreateOrLoad<HDRenderPipelineAsset>();
@@ -536,7 +577,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 FixHdrpAssetUsed();
             (GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset).renderPipelineResources
                 = AssetDatabase.LoadAssetAtPath<RenderPipelineResources>(HDUtils.GetHDRenderPipelinePath() + "Runtime/RenderPipelineResources/HDRenderPipelineResources.asset");
-            ResourceReloader.ReloadAllNullIn((GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset).renderPipelineResources, HDUtils.GetHDRenderPipelinePath());
+            ResourceReloader.ReloadAllNullIn((GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset).renderPipelineResources);
         }
 
         bool IsHdrpAssetEditorResourcesCorrect() =>
@@ -548,7 +589,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 FixHdrpAssetUsed();
             (GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset).renderPipelineEditorResources
                 = AssetDatabase.LoadAssetAtPath<HDRenderPipelineEditorResources>(HDUtils.GetHDRenderPipelinePath() + "Editor/RenderPipelineResources/HDRenderPipelineEditorResources.asset");
-            ResourceReloader.ReloadAllNullIn((GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset).renderPipelineEditorResources, HDUtils.GetHDRenderPipelinePath());
+            ResourceReloader.ReloadAllNullIn((GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset).renderPipelineEditorResources);
         }
 
         bool IsHdrpAssetDiffusionProfileCorrect()

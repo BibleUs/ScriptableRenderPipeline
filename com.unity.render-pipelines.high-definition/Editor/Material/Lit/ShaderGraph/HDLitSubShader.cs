@@ -160,6 +160,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             BlendOverride = "Blend One Zero",
             ZWriteOverride = "ZWrite On",
             ColorMaskOverride = "ColorMask 0",
+            ExtraDefines = new List<string>()
+            {
+                "#define USE_LEGACY_UNITY_MATRIX_VARIABLES",
+            },
             Includes = new List<string>()
             {
                 "#include \"Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl\"",
@@ -189,7 +193,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             ExtraDefines = new List<string>()
             {
                 "#define SCENESELECTIONPASS",
-                "#pragma editor_sync_compilation",
             },            
             Includes = new List<string>()
             {
@@ -269,11 +272,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             LightMode = "MotionVectors",
             TemplateName = "HDLitPass.template",
             MaterialName = "Lit",
-            ShaderPassName = "SHADERPASS_MOTION_VECTORS",
+            ShaderPassName = "SHADERPASS_VELOCITY",
             ExtraDefines = HDSubShaderUtilities.s_ExtraDefinesDepthOrMotion,
             Includes = new List<string>()
             {
-                "#include \"Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassMotionVectors.hlsl\"",
+                "#include \"Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassVelocity.hlsl\"",
             },
             RequiredFields = new List<string>()
             {
@@ -596,9 +599,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 "#pragma multi_compile _ LIGHTMAP_ON",
                 "#pragma multi_compile _ DIRLIGHTMAP_COMBINED",
                 "#pragma multi_compile _ DYNAMICLIGHTMAP_ON",
-                "#pragma multi_compile _ DIFFUSE_LIGHTING_ONLY",
+                "#pragma multi_compile _ DIFFUSE_LIGHTNG_ONLY",
                 "#define SHADOW_LOW",
-                "#define SKIP_RASTERIZED_SHADOWS",
             },
             Includes = new List<string>()
             {
@@ -696,7 +698,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 "#pragma multi_compile _ DIRLIGHTMAP_COMBINED",
                 "#pragma multi_compile _ DYNAMICLIGHTMAP_ON",
                 "#define SHADOW_LOW",
-                "#define SKIP_RASTERIZED_SHADOWS",
             },
             Includes = new List<string>()
             {
@@ -736,8 +737,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             UseInPreview = false
         };
 
-        public int GetPreviewPassIndex() { return 0; }
-
         private static List<string> GetInstancingOptionsFromMasterNode(AbstractMaterialNode iMasterNode)
         {
             List<string> instancingOption = new List<string>();
@@ -771,7 +770,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (masterNode.doubleSidedMode != DoubleSidedMode.Disabled)
             {
                 activeFields.Add("DoubleSided");
-                if (pass.ShaderPassName != "SHADERPASS_MOTION_VECTORS")   // HACK to get around lack of a good interpolator dependency system
+                if (pass.ShaderPassName != "SHADERPASS_VELOCITY")   // HACK to get around lack of a good interpolator dependency system
                 {                                                   // we need to be able to build interpolators using multiple input structs
                                                                     // also: should only require isFrontFace if Normals are required...
                     if (masterNode.doubleSidedMode == DoubleSidedMode.FlippedNormals)
@@ -879,9 +878,9 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     activeFields.Add("AlphaFog");
                 }
 
-                if (masterNode.transparentWritesMotionVec.isOn)
+                if (masterNode.transparentWritesVelocity.isOn)
                 {
-                    activeFields.Add("TransparentWritesMotionVec");
+                    activeFields.Add("TransparentWritesVelocity");
                 }
             }
 
@@ -994,7 +993,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             if (mode == GenerationMode.ForReals || pass.UseInPreview)
             {
-                SurfaceMaterialOptions materialOptions = HDSubShaderUtilities.BuildMaterialOptions(masterNode.surfaceType, masterNode.alphaMode, masterNode.doubleSidedMode != DoubleSidedMode.Disabled, masterNode.HasRefraction(), masterNode.renderingPass == HDRenderQueue.RenderQueueType.LowTransparent);
+                SurfaceMaterialOptions materialOptions = HDSubShaderUtilities.BuildMaterialOptions(masterNode.surfaceType, masterNode.alphaMode, masterNode.doubleSidedMode != DoubleSidedMode.Disabled, masterNode.HasRefraction());
 
                 pass.OnGeneratePass(masterNode);
 

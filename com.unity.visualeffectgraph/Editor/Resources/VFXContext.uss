@@ -240,9 +240,6 @@ VFXContextUI.graphElement #user-label
     margin-bottom: 1px;
     padding-left:0;
     padding-right:0;
-    color: #c4c4c4;
-    min-height: 24px;
-    white-space:normal;
 }
 
 #user-title
@@ -271,30 +268,21 @@ TextField#user-title-textfield
     margin-right:0;
     margin-top: 2px;
     margin-bottom:0;
-    background-color:rgba(0,0,0,0);
+    background-color:#000;
     position: Absolute;
     min-height: 24px;
 }
 
-TextField#user-title-textfield #unity-text-input
+#user-label, #user-title-textfield
 {
-    padding-left:0;
-    padding-right:0;
-    padding-top:0;
-    padding-bottom:0;
-    margin-left: 1px;
-    margin-right:0;
-    margin-top: 2px;
-    margin-bottom:0;
-    background-color:rgba(29,29,29,0.8);
-    background-image:none;
-    min-height: 24px;
     font-size: 18px;
     white-space: normal;
 }
 
 #user-label
 {
+    color: #c4c4c4;
+    min-height: 24px;
 }
 
 VFXContextUI.inputTypespawnevent #user-label

@@ -1,5 +1,5 @@
-#ifndef __VARYING_MESH_INCLUDED__
-#define __VARYING_MESH_INCLUDED__
+#ifndef __VARYING_MESH_HLSL__
+#define __VARYING_MESH_HLSL__
 
 struct AttributesMesh
 {
@@ -359,4 +359,4 @@ VaryingsMeshToDS InterpolateWithBaryCoordsMeshToDS(VaryingsMeshToDS input0, Vary
 
 #endif // TESSELLATION_ON
 
-#endif // __VARYING_MESH_INCLUDED__
+#endif // __VARYING_MESH_HLSL__

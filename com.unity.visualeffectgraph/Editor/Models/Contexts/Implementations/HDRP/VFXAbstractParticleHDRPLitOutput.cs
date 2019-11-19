@@ -154,12 +154,6 @@ namespace UnityEditor.VFX
             public Color emissiveColor = Color.black;
         }
 
-        public class ExposureWeightProperties
-        {
-            [Tooltip("The proportion of emission to expose"), Range(0, 1)]
-            public float exposureWeight = 1.0f;
-        }
-
         protected override IEnumerable<VFXPropertyWithValue> inputProperties
         {
             get
@@ -189,9 +183,6 @@ namespace UnityEditor.VFX
 
                 if (((colorMode & ColorMode.Emissive) == 0) && useEmissive)
                     properties = properties.Concat(PropertiesFromType("EmissiveColorProperties"));
-
-                if ((colorMode & ColorMode.Emissive) != 0 || useEmissive || useEmissiveMap)
-                    properties = properties.Concat(PropertiesFromType("ExposureWeightProperties"));
 
                 return properties;
             }
@@ -253,9 +244,6 @@ namespace UnityEditor.VFX
 
             if (((colorMode & ColorMode.Emissive) == 0) && useEmissive)
                 yield return slotExpressions.First(o => o.name == "emissiveColor");
-
-            if ((colorMode & ColorMode.Emissive) != 0 || useEmissive || useEmissiveMap)
-                yield return slotExpressions.First(o => o.name == "exposureWeight");
         }
 
         public override IEnumerable<string> additionalDefines
@@ -356,8 +344,6 @@ namespace UnityEditor.VFX
                 foreach (var setting in base.filteredOutSettings)
                     yield return setting;
 
-                yield return "colorMappingMode";
-
                 if (materialType != MaterialType.Translucent && materialType != MaterialType.SimpleLitTranslucent)
                 {
                     yield return "diffusionProfileHash";
@@ -388,12 +374,6 @@ namespace UnityEditor.VFX
                 if (isBlendModeOpaque)
                     yield return "onlyAmbientLighting";
             }
-        }
-
-        public override void OnEnable()
-        {
-            colorMappingMode = ColorMappingMode.Default;
-            base.OnEnable();
         }
 
         // HDRP always premultiplies in shader

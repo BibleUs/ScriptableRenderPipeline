@@ -1,23 +1,37 @@
-using System;
+using System.Collections.Generic;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEditor.ShaderGraph;
 using UnityEngine;
-using UnityEditor;
+using System.IO;
+using System.Linq;
+using System.Text;
 
-[ScriptedImporter(6, Extension, 1)]
+[ScriptedImporter(3, Extension)]
 class ShaderSubGraphImporter : ScriptedImporter
 {
     public const string Extension = "shadersubgraph";
 
     public override void OnImportAsset(AssetImportContext ctx)
     {
-        var graphAsset = ScriptableObject.CreateInstance<SubGraphAsset>();
-        graphAsset.importedAt = DateTime.Now.Ticks;
+        var textGraph = File.ReadAllText(ctx.assetPath, Encoding.UTF8);
+        var graph = JsonUtility.FromJson<GraphData>(textGraph);
 
-        Texture2D texture = Resources.Load<Texture2D>("Icons/sg_subgraph_icon@64");
-        ctx.AddObjectToAsset("MainAsset", graphAsset, texture);
-        ctx.SetMainObject(graphAsset);
+        if (graph == null)
+            return;
         
-        AssetDatabase.ImportAsset(SubGraphDatabaseImporter.path);
+        graph.isSubGraph = true;
+
+        var sourceAssetDependencyPaths = new List<string>();
+        foreach (var node in graph.GetNodes<AbstractMaterialNode>())
+            node.GetSourceAssetDependencies(sourceAssetDependencyPaths);
+
+        var graphAsset = ScriptableObject.CreateInstance<MaterialSubGraphAsset>();
+        graphAsset.subGraph = graph;
+
+        ctx.AddObjectToAsset("MainAsset", graphAsset);
+        ctx.SetMainObject(graphAsset);
+
+        foreach (var sourceAssetDependencyPath in sourceAssetDependencyPaths.Distinct())
+            ctx.DependsOnSourceAsset(sourceAssetDependencyPath);
     }
 }

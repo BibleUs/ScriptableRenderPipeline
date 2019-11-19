@@ -52,13 +52,21 @@ Shader "Hidden/HDRP/Blit"
         float4 FragNearest(Varyings input) : SV_Target
         {
             UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-            return SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, input.texcoord.xy, _BlitMipLevel);
+            float2 uv = input.texcoord.xy;
+#if UNITY_SINGLE_PASS_STEREO
+            uv.x = (uv.x + unity_StereoEyeIndex) * 0.5;
+#endif
+            return SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, uv, _BlitMipLevel);
         }
 
         float4 FragBilinear(Varyings input) : SV_Target
         {
             UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-            return SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, input.texcoord.xy, _BlitMipLevel);
+            float2 uv = input.texcoord.xy;
+#if UNITY_SINGLE_PASS_STEREO
+            uv.x = (uv.x + unity_StereoEyeIndex) * 0.5;
+#endif
+            return SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv, _BlitMipLevel);
         }
 
     ENDHLSL

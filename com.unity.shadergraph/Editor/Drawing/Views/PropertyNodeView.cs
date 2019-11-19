@@ -39,18 +39,6 @@ namespace UnityEditor.ShaderGraph
         public Node gvNode => this;
         public AbstractMaterialNode node { get; }
 
-        public VisualElement colorElement => null;
-
-        public void SetColor(Color newColor)
-        {
-            // Nothing to do here yet
-        }
-
-        public void ResetColor()
-        {
-            // Nothing to do here yet
-        }
-
         public void UpdatePortInputTypes()
         {
         }

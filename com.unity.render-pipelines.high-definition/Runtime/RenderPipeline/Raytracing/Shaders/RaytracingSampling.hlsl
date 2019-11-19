@@ -1,6 +1,8 @@
 // We need a noise texture for sampling
-Texture2D<float4>                       _OwenScrambledTexture;
+Texture2D<float>                        _OwenScrambledTexture;
 Texture2D<float4>                       _ScramblingTexture;
+uint                                    _RaytracingNoiseResolution;
+uint                                    _RaytracingNumNoiseLayers;
 
 // TODO: Use the tangent to create the local orthobasis
 void CreatePixarOrthoNormalBasis(float3 n, out float3 tangent, out float3 bitangent)
@@ -19,14 +21,14 @@ uint2 ScramblingValue(uint i, uint j)
     return clamp((uint2)(_ScramblingTexture[uint2(i, j)] * 256.0f), uint2(0,0), uint2(255, 255));
 }
 
-float GetRaytracingNoiseSample(uint sampleIndex, uint sampleDimension, uint scramblingValue)
+float GetRaytracingNoiseSample(int sampleIndex, int sampleDimension, uint scramblingValue)
 {
     // Make sure arguments are in the right range
     sampleIndex = sampleIndex % 256;
-    sampleDimension = sampleDimension % 4;
+    sampleDimension = sampleDimension % 256;
 
     // Fetch the matching Value sequence
-    uint value = clamp((uint)(_OwenScrambledTexture[uint2(sampleIndex, 0)][sampleDimension] * 256.0f), 0, 255);
+    uint value = clamp((uint)(_OwenScrambledTexture[uint2(sampleIndex, sampleDimension)] * 256.0f), 0, 255);
 
     // Scramble the value
     value = value ^ scramblingValue;

@@ -120,7 +120,7 @@ namespace UnityEditor.VFX
                     }
 
                 if (nbRemoved > 0)
-                    Debug.LogWarning(String.Format("Remove {0} owners that couldnt be deserialized from {1} of type {2}", nbRemoved, name, GetType()));
+                    Debug.Log(String.Format("Remove {0} owners that couldnt be deserialized from {1} of type {2}", nbRemoved, name, GetType()));
             }
         }
 

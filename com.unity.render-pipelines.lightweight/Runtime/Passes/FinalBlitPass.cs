@@ -9,13 +9,10 @@ namespace UnityEngine.Rendering.LWRP
     /// </summary>
     internal class FinalBlitPass : ScriptableRenderPass
     {
-        const string m_ProfilerTag = "Final Blit Pass";
         RenderTargetHandle m_Source;
         Material m_BlitMaterial;
         TextureDimension m_TargetDimension;
-        bool m_ClearBlitTarget;
-        Rect m_PixelRect;
-        
+        const string m_ProfilerTag = "Final Blit Pass";
         public FinalBlitPass(RenderPassEvent evt, Material blitMaterial)
         {
             m_BlitMaterial = blitMaterial;
@@ -27,14 +24,10 @@ namespace UnityEngine.Rendering.LWRP
         /// </summary>
         /// <param name="baseDescriptor"></param>
         /// <param name="colorHandle"></param>
-        /// <param name="clearBlitTarget"></param>
-        /// <param name="pixelRect"></param>
-        public void Setup(RenderTextureDescriptor baseDescriptor, RenderTargetHandle colorHandle, bool clearBlitTarget = false, Rect pixelRect = new Rect())
+        public void Setup(RenderTextureDescriptor baseDescriptor, RenderTargetHandle colorHandle)
         {
             m_Source = colorHandle;
             m_TargetDimension = baseDescriptor.dimension;
-            m_ClearBlitTarget = clearBlitTarget;
-            m_PixelRect = pixelRect;
         }
 
         /// <inheritdoc/>
@@ -61,8 +54,7 @@ namespace UnityEngine.Rendering.LWRP
             else
                 cmd.DisableShaderKeyword(ShaderKeywordStrings.KillAlpha);
 
-            ref CameraData cameraData = ref renderingData.cameraData;
-            if (cameraData.isStereoEnabled || cameraData.isSceneViewCamera || cameraData.isDefaultViewport)
+            if (renderingData.cameraData.isStereoEnabled || renderingData.cameraData.isSceneViewCamera)
             {
                 cmd.Blit(m_Source.Identifier(), BuiltinRenderTextureType.CameraTarget);
             }
@@ -70,23 +62,18 @@ namespace UnityEngine.Rendering.LWRP
             {
                 cmd.SetGlobalTexture("_BlitTex", m_Source.Identifier());
 
-                // TODO: Final blit pass should always blit to backbuffer. The first time we do we don't need to Load contents to tile.
-                // We need to keep in the pipeline of first render pass to each render target to propertly set load/store actions.
-                // meanwhile we set to load so split screen case works.
                 SetRenderTarget(
                     cmd,
                     BuiltinRenderTextureType.CameraTarget,
-                    RenderBufferLoadAction.Load,
+                    RenderBufferLoadAction.DontCare,
                     RenderBufferStoreAction.Store,
-                    m_ClearBlitTarget ? ClearFlag.Color : ClearFlag.None,
+                    ClearFlag.None,
                     Color.black,
                     m_TargetDimension);
 
-                Camera camera = cameraData.camera;
                 cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
-                cmd.SetViewport(m_PixelRect != Rect.zero ? m_PixelRect : cameraData.camera.pixelRect);
+                cmd.SetViewport(renderingData.cameraData.camera.pixelRect);
                 cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_BlitMaterial);
-                cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
             }
 
             context.ExecuteCommandBuffer(cmd);

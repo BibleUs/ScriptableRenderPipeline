@@ -32,19 +32,15 @@
     TEXTURECUBE_ARRAY_ABSTRACT(_EnvCubemapTextures);
     TEXTURE2D_ARRAY(_Env2DTextures);
 
-    // Contact shadows
-    TEXTURE2D_X_UINT(_ContactShadowTexture);
-
-    // Screen space shadows
-    TEXTURE2D_X(_ScreenSpaceShadowsTexture);
-
+    // XRTODO: Need to stereo-ize access
+    TEXTURE2D_X(_DeferredShadowTexture);
 
 #if SHADEROPTIONS_RAYTRACING
     // Area shadow paper texture
     TEXTURE2D_ARRAY(_AreaShadowTexture);
 
     // Indirect Diffuse Texture
-    TEXTURE2D_X(_IndirectDiffuseTexture);
+    TEXTURE2D(_IndirectDiffuseTexture);
 #endif
 
 #endif

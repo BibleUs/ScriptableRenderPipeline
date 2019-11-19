@@ -10,21 +10,22 @@ namespace UnityEditor.ShaderGraph
 {
     static class GradientUtils
     {
-        public static string GetGradientValue(Gradient gradient, bool inline, string delimiter = ";")
+        public static string GetGradientValue(Gradient gradient, AbstractMaterialNode.OutputPrecision precision, bool inline, string delimiter = ";")
         {
             string colorKeys = "";
             for(int i = 0; i < 8; i++)
             {
                 if(i < gradient.colorKeys.Length)
                 {
-                    colorKeys += string.Format("$precision4({0}, {1}, {2}, {3})"
+                    colorKeys += string.Format("{0}4({1}, {2}, {3}, {4})"
+                        , precision
                         , gradient.colorKeys[i].color.r
                         , gradient.colorKeys[i].color.g
                         , gradient.colorKeys[i].color.b
                         , gradient.colorKeys[i].time);
                 }
                 else
-                    colorKeys += "$precision4(0, 0, 0, 0)";
+                    colorKeys += string.Format("{0}4(0, 0, 0, 0)", precision);
                 if(i < 7)
                     colorKeys += ",";
             }
@@ -34,12 +35,13 @@ namespace UnityEditor.ShaderGraph
             {
                 if(i < gradient.alphaKeys.Length)
                 {
-                    alphaKeys += string.Format("$precision2({0}, {1})"
+                    alphaKeys += string.Format("{0}2({1}, {2})"
+                        , precision
                         , gradient.alphaKeys[i].alpha
                         , gradient.alphaKeys[i].time);
                 }
                 else
-                    alphaKeys += "$precision2(0, 0)";
+                    alphaKeys += string.Format("{0}2(0, 0)", precision);
                 if(i < 7)
                     alphaKeys += ",";
             }
@@ -205,11 +207,6 @@ namespace UnityEditor.ShaderGraph
             get { return false; }
         }
 
-        public override bool isRenamable
-        {
-            get { return true; }
-        }
-
         public override string GetPropertyBlockString()
         {
             return string.Empty;
@@ -223,11 +220,10 @@ namespace UnityEditor.ShaderGraph
             {
                 string[] colors = new string[8];
                 for (int i = 0; i < colors.Length; i++)
-                    colors[i] = string.Format("g.colors[{0}] = {1}4(0, 0, 0, 0);", i, concretePrecision.ToShaderString());
+                    colors[i] = string.Format("g.colors[{0}] = float4(0, 0, 0, 0);", i);
                 for (int i = 0; i < value.colorKeys.Length; i++)
-                    colors[i] = string.Format("g.colors[{0}] = {1}4({2}, {3}, {4}, {5});"
+                    colors[i] = string.Format("g.colors[{0}] = float4({1}, {2}, {3}, {4});"
                         , i
-                        , concretePrecision.ToShaderString()
                         , value.colorKeys[i].color.r
                         , value.colorKeys[i].color.g
                         , value.colorKeys[i].color.b
@@ -235,11 +231,10 @@ namespace UnityEditor.ShaderGraph
 
                 string[] alphas = new string[8];
                 for (int i = 0; i < alphas.Length; i++)
-                    alphas[i] = string.Format("g.alphas[{0}] = {1}2(0, 0);", i, concretePrecision.ToShaderString());
+                    alphas[i] = string.Format("g.alphas[{0}] = float2(0, 0);", i);
                 for (int i = 0; i < value.alphaKeys.Length; i++)
-                    alphas[i] = string.Format("g.alphas[{0}] = {1}2({2}, {3});"
+                    alphas[i] = string.Format("g.alphas[{0}] = float2({1}, {2});"
                         , i
-                        , concretePrecision.ToShaderString()
                         , value.alphaKeys[i].alpha
                         , value.alphaKeys[i].time);
 

@@ -22,12 +22,12 @@ namespace UnityEngine.Rendering.LWRP
         /// <summary>
         /// Create the CopyColorPass
         /// </summary>
-        public CopyColorPass(RenderPassEvent evt, Material samplingMaterial)
+        public CopyColorPass(RenderPassEvent evt, Material samplingMaterial, Downsampling downsampling)
         {
             m_SamplingMaterial = samplingMaterial;
             m_SampleOffsetShaderHandle = Shader.PropertyToID("_SampleOffset");
             renderPassEvent = evt;
-            m_DownsamplingMethod = Downsampling.None;
+            m_DownsamplingMethod = downsampling;
         }
 
         /// <summary>
@@ -35,11 +35,10 @@ namespace UnityEngine.Rendering.LWRP
         /// </summary>
         /// <param name="source">Source Render Target</param>
         /// <param name="destination">Destination Render Target</param>
-        public void Setup(RenderTargetIdentifier source, RenderTargetHandle destination, Downsampling downsampling)
+        public void Setup(RenderTargetIdentifier source, RenderTargetHandle destination)
         {
             this.source = source;
             this.destination = destination;
-            m_DownsamplingMethod = downsampling;
         }
 
         public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescripor)

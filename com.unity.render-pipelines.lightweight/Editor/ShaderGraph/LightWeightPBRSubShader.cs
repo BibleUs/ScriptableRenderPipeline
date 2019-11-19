@@ -79,8 +79,6 @@ namespace UnityEditor.Rendering.LWRP
             }
         };
 
-        public int GetPreviewPassIndex() { return 0; }
-
         public string GetSubshader(IMasterNode masterNode, GenerationMode mode, List<string> sourceAssetDependencyPaths = null)
         {
             if (sourceAssetDependencyPaths != null)
@@ -165,7 +163,6 @@ namespace UnityEditor.Rendering.LWRP
             // String builders
 
             var shaderProperties = new PropertyCollector();
-            var shaderPropertyUniforms = new ShaderStringBuilder(1);
             var functionBuilder = new ShaderStringBuilder(1);
             var functionRegistry = new FunctionRegistry(functionBuilder);
 
@@ -333,7 +330,7 @@ namespace UnityEditor.Rendering.LWRP
             // -------------------------------------
             // Generate Output structure for Surface Description function
 
-            GraphUtil.GenerateSurfaceDescriptionStruct(surfaceDescriptionStruct, pixelSlots);
+            GraphUtil.GenerateSurfaceDescriptionStruct(surfaceDescriptionStruct, pixelSlots, true);
 
             // -------------------------------------
             // Generate Surface Description function
@@ -355,11 +352,6 @@ namespace UnityEditor.Rendering.LWRP
             // ----------------------------------------------------- //
             //           GENERATE VERTEX > PIXEL PIPELINE            //
             // ----------------------------------------------------- //
-
-            // -------------------------------------
-            // Property uniforms
-
-            shaderProperties.GetPropertiesDeclaration(shaderPropertyUniforms, mode, masterNode.owner.concretePrecision);
 
             // -------------------------------------
             // Generate Input structure for Vertex shader
@@ -408,7 +400,7 @@ namespace UnityEditor.Rendering.LWRP
             // -------------------------------------
             // Combine Graph sections
 
-            graph.AppendLines(shaderPropertyUniforms.ToString());
+            graph.AppendLine(shaderProperties.GetPropertiesDeclaration(1));
 
             graph.AppendLine(vertexDescriptionInputStruct.ToString());
             graph.AppendLine(surfaceDescriptionInputStruct.ToString());

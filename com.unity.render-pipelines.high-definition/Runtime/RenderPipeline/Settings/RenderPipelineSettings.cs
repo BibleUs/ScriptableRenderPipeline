@@ -27,12 +27,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Both = ForwardOnly | DeferredOnly
         }
 
-        public enum RaytracingTier
-        {
-            Tier1 = 1 << 0,
-            Tier2 = 1 << 1
-        }
-
         public enum ColorBufferFormat
         {
             R11G11B10 = GraphicsFormat.B10G11R11_UFloatPack32,
@@ -61,10 +55,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             hdShadowInitParams = HDShadowInitParameters.@default,
             decalSettings = GlobalDecalSettings.@default,
             postProcessSettings = GlobalPostProcessSettings.@default,
-            dynamicResolutionSettings = GlobalDynamicResolutionSettings.@default,
-            lowresTransparentSettings = GlobalLowResolutionTransparencySettings.@default,
-            supportRayTracing = false,
-            supportedRaytracingTier = RaytracingTier.Tier2,
+            dynamicResolutionSettings = GlobalDynamicResolutionSettings.@default
         };
 
         // Lighting
@@ -99,13 +90,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public bool supportRuntimeDebugDisplay;
         public bool supportDitheringCrossFade;
         public bool supportRayTracing;
-        public RaytracingTier supportedRaytracingTier;
 
         public GlobalLightLoopSettings lightLoopSettings;
         public HDShadowInitParameters hdShadowInitParams;
         public GlobalDecalSettings decalSettings;
         public GlobalPostProcessSettings postProcessSettings;
         public GlobalDynamicResolutionSettings dynamicResolutionSettings;
-        public GlobalLowResolutionTransparencySettings lowresTransparentSettings;
     }
 }

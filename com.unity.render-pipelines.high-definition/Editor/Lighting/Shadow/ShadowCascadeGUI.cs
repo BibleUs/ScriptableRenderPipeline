@@ -33,40 +33,13 @@ namespace UnityEditor
         };
         private static readonly Color kDisabledColor = new Color(0.5f, 0.5f, 0.5f, 0.4f); //works with both personal and pro skin
 
-        class LazyTextureArray
+        private static readonly Texture2D[] kBorderBlends =
         {
-            Texture2D[] values = new[]
-            {
-                new Texture2D(1, 1),
-                new Texture2D(1, 1),
-                new Texture2D(1, 1),
-                new Texture2D(1, 1),
-            };
-            public Texture2D this[int index]
-            {
-                get
-                {
-                    if (index < 0 || 3 < index)
-                        throw new IndexOutOfRangeException();
-
-                    if (values.Length != 4)
-                    {
-                        values = new[]
-                        {
-                            new Texture2D(1, 1),
-                            new Texture2D(1, 1),
-                            new Texture2D(1, 1),
-                            new Texture2D(1, 1),
-                        };
-                    }
-                    var value = values[index];
-                    if (value == null || value.Equals(null))
-                        value = values[index] = new Texture2D(1, 1);
-                    return value;
-                }
-            }
-        }
-        private static readonly Lazy<LazyTextureArray> kBorderBlends = new Lazy<LazyTextureArray>();
+            new Texture2D(1,1),
+            new Texture2D(1,1),
+            new Texture2D(1,1),
+            new Texture2D(1,1),
+        };
 
         // using a LODGroup skin
         private static readonly GUIStyle s_CascadeSliderBG = "LODSliderRange";
@@ -203,9 +176,9 @@ namespace UnityEditor
                 gradientRect.width -= 3;
                 if (gradientRect.width > 0)
                 {
-                    kBorderBlends.Value[i].Resize((int)gradientRect.width, 1);
-                    FillWithGradient(kBorderBlends.Value[i], kCascadeColors[i], i < adjustedCascadePartitions.Length - 1 ? kCascadeColors[i + 1] : Color.black);
-                    GUI.DrawTexture(gradientRect, kBorderBlends.Value[i]);
+                    kBorderBlends[i].Resize((int)gradientRect.width, 1);
+                    FillWithGradient(kBorderBlends[i], kCascadeColors[i], i < adjustedCascadePartitions.Length - 1 ? kCascadeColors[i + 1] : Color.black);
+                    GUI.DrawTexture(gradientRect, kBorderBlends[i]);
                 }
 
                 // blend cascade box text

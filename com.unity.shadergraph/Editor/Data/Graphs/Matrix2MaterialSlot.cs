@@ -45,9 +45,9 @@ namespace UnityEditor.ShaderGraph
             set { m_Value = value; }
         }
 
-        protected override string ConcreteSlotValueAsVariable()
+        protected override string ConcreteSlotValueAsVariable(AbstractMaterialNode.OutputPrecision precision)
         {
-            return "$precision2x2 (1,0,0,1)";
+            return precision + "2x2 (1,0,0,1)";
         }
 
         public override void AddDefaultProperty(PropertyCollector properties, GenerationMode generationMode)
